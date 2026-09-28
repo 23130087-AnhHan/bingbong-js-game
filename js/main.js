@@ -13,6 +13,16 @@ const paddle= {
     moveRight: false
 };
 
+const ball ={
+    x: canvas.width/2,
+    y: canvas.height/2,
+    radius: 10,
+    velocityX: 220,
+    velocityY: -260
+};
+
+
+
 paddle.x = (canvas.width - paddle.width) / 2;
 
 window.addEventListener("keydown", (event) => {
@@ -42,36 +52,66 @@ window.addEventListener("keyup", (event) => {
     }
 })
 
-function update(deltaTime){
+function updatePaddle(deltaTime){
     if(paddle.moveLeft){
         paddle.x -= paddle.speed*deltaTime;
     }
-
     if(paddle.moveRight){
         paddle.x += paddle.speed*deltaTime;
     }
-
     if(paddle.x < 0){
         paddle.x =0;
     }
-
     if(paddle.x + paddle.width > canvas.width){
         paddle.x= canvas.width - paddle.width;
     }
-
 }
 
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function updateBall(deltaTime) {
+    ball.x += ball.velocityX * deltaTime;
+    ball.y += ball.velocityY * deltaTime;
+}
+
+function update(deltaTime) {
+    updatePaddle(deltaTime);
+    updateBall(deltaTime);
+}
+
+function drawPaddle() {
     ctx.fillStyle = "white";
 
     ctx.fillRect(
         paddle.x,
         paddle.y,
         paddle.width,
-        paddle.height,
-    )
+        paddle.height
+    );
+}
 
+function drawBall() {
+    ctx.beginPath();
+
+    ctx.arc(
+        ball.x,
+        ball.y,
+        ball.radius,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = "white";
+    ctx.fill();
+
+    ctx.closePath();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawPaddle();
+    drawBall();
+
+    ctx.fillStyle = "white";
     ctx.font = "20px Arial";
     ctx.fillText("Move: A / D or <- / ->", 20, 30);
 
