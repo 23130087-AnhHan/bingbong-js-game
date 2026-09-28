@@ -50,7 +50,24 @@ window.addEventListener("keyup", (event) => {
     if(event.key === "ArrowRight" || event.key. toLowerCase() === "d") {
         paddle.moveRight= false;
     }
-})
+});
+
+function handleWallCollision(){
+    if(ball.x -ball.radius <=0){
+        ball.x = ball.radius;
+        ball.velocityX = Math.abs(ball.velocityX);
+    }
+
+    if(ball.x + ball.radius >= canvas.width) {
+        ball.x = canvas.width - ball.radius;
+        ball.velocityX = -Math.abs(ball.velocityX);
+    }
+
+    if (ball.y - ball.radius <=0){
+        ball.y = ball.radius;
+        ball.velocityY = Math.abs(ball.velocityY);
+    }
+}
 
 function updatePaddle(deltaTime){
     if(paddle.moveLeft){
@@ -70,6 +87,8 @@ function updatePaddle(deltaTime){
 function updateBall(deltaTime) {
     ball.x += ball.velocityX * deltaTime;
     ball.y += ball.velocityY * deltaTime;
+
+    handleWallCollision();
 }
 
 function update(deltaTime) {
