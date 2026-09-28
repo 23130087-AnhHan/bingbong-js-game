@@ -1,1 +1,5 @@
-console.log("BingBong game started!");
+const canvas = document.getElementById('gameCanvas');
+const ctx= canvas.getContext('2d');
+
+console.log(canvas);
+console.log(ctx);
