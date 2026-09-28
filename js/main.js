@@ -21,9 +21,8 @@ const ball ={
     velocityY: -260
 };
 
-
-
 paddle.x = (canvas.width - paddle.width) / 2;
+const MAX_BOUNCE_ANGLE = Math.PI / 3;
 
 window.addEventListener("keydown", (event) => {
      if (
@@ -69,6 +68,56 @@ function handleWallCollision(){
     }
 }
 
+function handlePaddleCollision(){
+    const ballLeft = ball.x - ball.radius;
+    const ballRight = ball.x + ball.radius;
+    const ballTop = ball.y - ball.radius;
+    const ballBottom = ball.y + ball.radius;
+
+    const paddleLeft = paddle.x;
+    const paddleRight = paddle.x + paddle.width;
+    const paddleTop = paddle.y;
+    const paddleBottom = paddle.y + paddle.height;
+
+    const overlapsHorizontally =
+        ballRight >= paddleLeft &&
+        ballLeft <= paddleRight;
+
+    const overlapsVertically =
+        ballBottom >= paddleTop &&
+        ballTop <= paddleBottom;
+
+    if (
+        overlapsHorizontally &&
+        overlapsVertically &&
+        ball.velocityY>0
+    ){
+        ball.y =paddle.y - ball.radius;
+
+        const paddleCenter=
+            paddle.x + paddle.width/2;
+
+        const hitPosition=
+            (ball.x - paddleCenter)/
+            (paddle.width / 2);
+        const clampedHitPosition =
+            Math.max(-1, Math.min(1, hitPosition));
+
+        const bounceAngle = clampedHitPosition * MAX_BOUNCE_ANGLE;
+
+        const speed = Math.hypot(
+            ball.velocityX,
+            ball.velocityY,
+        );
+
+        ball.velocityX=
+            speed * Math.sin(bounceAngle);
+
+        ball.velocityY=
+            -speed * Math.cos(bounceAngle);
+    }
+}
+
 function updatePaddle(deltaTime){
     if(paddle.moveLeft){
         paddle.x -= paddle.speed*deltaTime;
@@ -89,6 +138,7 @@ function updateBall(deltaTime) {
     ball.y += ball.velocityY * deltaTime;
 
     handleWallCollision();
+    handlePaddleCollision()
 }
 
 function update(deltaTime) {
