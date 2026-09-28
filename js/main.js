@@ -13,12 +13,14 @@ const paddle= {
     moveRight: false
 };
 
+const BALL_INITIAL_VELOCITY_X = 220;
+const BALL_INITIAL_VELOCITY_Y = -260;
 const ball ={
     x: canvas.width/2,
     y: canvas.height/2,
     radius: 10,
-    velocityX: 220,
-    velocityY: -260
+    velocityX: BALL_INITIAL_VELOCITY_X,
+    velocityY: BALL_INITIAL_VELOCITY_Y
 };
 
 paddle.x = (canvas.width - paddle.width) / 2;
@@ -118,6 +120,25 @@ function handlePaddleCollision(){
     }
 }
 
+function hasBallMissed(){
+    return ball.y - ball.radius > canvas.height;
+}
+
+function resetBall(){
+    ball.x = canvas.width/2;
+    ball.y = canvas.height/2;
+
+    const horizontalDirection =
+        Math.random() < 0.5 ? -1 : 1;
+
+    ball.velocityX =
+        BALL_INITIAL_VELOCITY_X * horizontalDirection;
+
+    ball.velocityY =
+        BALL_INITIAL_VELOCITY_Y ;
+}
+
+
 function updatePaddle(deltaTime){
     if(paddle.moveLeft){
         paddle.x -= paddle.speed*deltaTime;
@@ -138,7 +159,11 @@ function updateBall(deltaTime) {
     ball.y += ball.velocityY * deltaTime;
 
     handleWallCollision();
-    handlePaddleCollision()
+    handlePaddleCollision();
+
+    if (hasBallMissed()) {
+        resetBall();
+    }
 }
 
 function update(deltaTime) {
