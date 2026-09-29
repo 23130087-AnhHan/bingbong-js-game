@@ -2,6 +2,10 @@ const canvas = document.getElementById('gameCanvas');
 const ctx= canvas.getContext('2d');
 
 let lastTime=0;
+const INITIAL_LIVES = 3;
+
+let lives=INITIAL_LIVES;
+let isGameOver = false;
 
 const paddle= {
     width: 120,
@@ -124,6 +128,7 @@ function hasBallMissed(){
     return ball.y - ball.radius > canvas.height;
 }
 
+
 function resetBall(){
     ball.x = canvas.width/2;
     ball.y = canvas.height/2;
@@ -136,6 +141,18 @@ function resetBall(){
 
     ball.velocityY =
         BALL_INITIAL_VELOCITY_Y ;
+}
+
+
+function handleBallMiss(){
+    lives --;
+
+    if (lives <= 0) {
+        lives = 0;
+        isGameOver = true;
+        return;
+    }
+    resetBall();
 }
 
 
@@ -162,11 +179,14 @@ function updateBall(deltaTime) {
     handlePaddleCollision();
 
     if (hasBallMissed()) {
-        resetBall();
+        handleBallMiss();
     }
 }
 
 function update(deltaTime) {
+    if(isGameOver){
+        return;
+    }
     updatePaddle(deltaTime);
     updateBall(deltaTime);
 }
@@ -199,15 +219,46 @@ function drawBall() {
     ctx.closePath();
 }
 
+function drawHub(){
+    ctx.fillStyle = "white";
+    ctx.font = "20px Arial";
+
+    ctx.fillText(`Lives: ${lives}`, 20, 30 );
+
+    ctx.font = "16px Arial";
+    ctx.fillText(
+        "Move: A / D or <- / ->", 20, 55
+    );
+}
+
+function drawGameOver(){
+    if(!isGameOver){
+        return;
+    }
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(
+        0, 0, canvas.width, canvas.height
+    );
+
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+
+    ctx.font = "48px Arial";
+    ctx.fillText("Game Over!", canvas.width/2, canvas.height/2);
+
+    ctx.font = "20px Arial";
+    ctx.fillText("No lives remaining", canvas.width/2, canvas.height/2 + 40);
+    ctx.textAlign = "left";
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     drawPaddle();
     drawBall();
-
-    ctx.fillStyle = "white";
-    ctx.font = "20px Arial";
-    ctx.fillText("Move: A / D or <- / ->", 20, 30);
+    drawHub();
+    drawGameOver();
 
 }
 
