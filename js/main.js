@@ -29,13 +29,15 @@ const MAX_BOUNCE_ANGLE = Math.PI / 3;
 
 const GAME_STATES = Object.freeze({
     PLAYING: "playing",
+    LEVEL_COMPLETE: "levelComplete",
     GAME_OVER: "gameOver"
 });
 
 const LEVELS = Object.freeze([
     Object.freeze({
         id: 1,
-        name: "First Bounce"
+        name: "First Bounce",
+        targetScore: 50
     }),
 
     Object.freeze({
@@ -241,6 +243,25 @@ function handleBallMiss(){
     resetBall();
 }
 
+function getCurrentLevel(){
+    return LEVELS[currentLevelIndex];
+}
+
+function checkLevelCompletion(){
+    if(gameState !== GAME_STATES.PLAYING){
+        return;
+    }
+
+    const currentLevel = getCurrentLevel();
+
+    if(typeof currentLevel.targetScore !== "number"){
+        return;
+    }
+
+    if(score >= currentLevel.targetScore){
+        gameState = GAME_STATES.LEVEL_COMPLETE;
+    }
+}
 
 function updatePaddle(deltaTime){
     if(paddle.moveLeft){
@@ -275,6 +296,8 @@ function update(deltaTime) {
     }
     updatePaddle(deltaTime);
     updateBall(deltaTime);
+
+    checkLevelCompletion();
 }
 
 function drawPaddle() {
@@ -329,6 +352,61 @@ function drawHud(){
     ctx.fillText(
         "Move: A / D or <- / ->", 20, 55
     );
+
+    if (typeof currentLevel.targetScore === "number") {
+        ctx.textAlign = "center";
+        ctx.fillText(
+            `Target: ${currentLevel.targetScore} points`,
+            canvas.width / 2,
+            55
+        );
+    }
+    ctx.textAlign = "left";
+}
+
+function drawLevelComplete() {
+    if (gameState !== GAME_STATES.LEVEL_COMPLETE) {
+        return;
+    }
+
+    const currentLevel = getCurrentLevel();
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+
+    ctx.font = "42px Arial";
+    ctx.fillText(
+        "LEVEL COMPLETE!",
+        centerX,
+        centerY - 35
+    );
+
+    ctx.font = "24px Arial";
+    ctx.fillText(
+        currentLevel.name,
+        centerX,
+        centerY + 10
+    );
+
+    ctx.font = "18px Arial";
+    ctx.fillText(
+        `Score: ${score}`,
+        centerX,
+        centerY + 50
+    );
+
+    ctx.textAlign = "left";
 }
 
 function drawGameOver(){
@@ -366,11 +444,8 @@ function draw() {
         drawBall();
     }
     drawHud();
+    drawLevelComplete();
     drawGameOver();
-}
-
-function getCurrentLevel(){
-    return LEVELS[currentLevelIndex];
 }
 
 function gameLoop(timestamp){
