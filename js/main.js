@@ -38,21 +38,25 @@ window.addEventListener("keydown", (event) => {
          event.preventDefault();
      }
 
-    if(event.key === "ArrowLeft" || event.key. toLowerCase() === "a") {
+    if(event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
         paddle.moveLeft= true;
     }
 
-    if(event.key === "ArrowRight" || event.key. toLowerCase() === "d") {
+    if(event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
         paddle.moveRight= true;
+    }
+
+    if(event.key.toLowerCase() === "r" && isGameOver) {
+        restartGame();
     }
 });
 
 window.addEventListener("keyup", (event) => {
-    if(event.key === "ArrowLeft" || event.key. toLowerCase() === "a") {
+    if(event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
         paddle.moveLeft= false;
     }
 
-    if(event.key === "ArrowRight" || event.key. toLowerCase() === "d") {
+    if(event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
         paddle.moveRight= false;
     }
 });
@@ -128,6 +132,12 @@ function hasBallMissed(){
     return ball.y - ball.radius > canvas.height;
 }
 
+function resetPaddle(){
+    paddle.x = (canvas.width - paddle.width) / 2;
+
+    paddle.moveLeft = false;
+    paddle.moveRight = false;
+}
 
 function resetBall(){
     ball.x = canvas.width/2;
@@ -141,6 +151,14 @@ function resetBall(){
 
     ball.velocityY =
         BALL_INITIAL_VELOCITY_Y ;
+}
+
+function restartGame(){
+    lives= INITIAL_LIVES;
+    isGameOver= false;
+
+    resetPaddle();
+    resetBall();
 }
 
 
@@ -219,7 +237,7 @@ function drawBall() {
     ctx.closePath();
 }
 
-function drawHub(){
+function drawHud(){
     ctx.fillStyle = "white";
     ctx.font = "20px Arial";
 
@@ -235,6 +253,8 @@ function drawGameOver(){
     if(!isGameOver){
         return;
     }
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
 
     ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
     ctx.fillRect(
@@ -245,19 +265,26 @@ function drawGameOver(){
     ctx.textAlign = "center";
 
     ctx.font = "48px Arial";
-    ctx.fillText("Game Over!", canvas.width/2, canvas.height/2);
+    ctx.fillText("Game Over!", centerX, centerY - 30);
 
     ctx.font = "20px Arial";
-    ctx.fillText("No lives remaining", canvas.width/2, canvas.height/2 + 40);
+    ctx.fillText("No lives remaining", centerX, centerY + 20);
+
+    ctx.font = "18px Arial";
+    ctx.fillText("Press R to Restart", centerX, centerY + 60);
+
     ctx.textAlign = "left";
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    drawPaddle();
-    drawBall();
-    drawHub();
+    if (!isGameOver) {
+        drawPaddle();
+        drawBall();
+    }
+
+    drawHud();
     drawGameOver();
 
 }
