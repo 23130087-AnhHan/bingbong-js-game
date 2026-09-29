@@ -32,10 +32,65 @@ const GAME_STATES = Object.freeze({
     GAME_OVER: "gameOver"
 });
 
+const LEVELS = Object.freeze([
+    Object.freeze({
+        id: 1,
+        name: "First Bounce"
+    }),
+
+    Object.freeze({
+        id: 2,
+        name: "Speed Rush"
+    }),
+
+    Object.freeze({
+        id: 3,
+        name: "Moving Walls"
+    }),
+
+    Object.freeze({
+        id: 4,
+        name: "Brick Storm"
+    }),
+
+    Object.freeze({
+        id: 5,
+        name: "Survival "
+    }),
+
+    Object.freeze({
+        id: 6,
+        name: "Multiball Chaos"
+    }),
+
+    Object.freeze({
+        id: 7,
+        name: "Portal Maze"
+    }),
+
+    Object.freeze({
+        id: 8,
+        name: "Power Battle"
+    }),
+
+    Object.freeze({
+        id: 9,
+        name: "Gravity Zone"
+    }),
+
+    Object.freeze({
+        id: 10,
+        name: "Final Boss"
+    })
+]);
+
+
 let lastTime=0;
 let lives=INITIAL_LIVES;
 let score=0;
 let gameState = GAME_STATES.PLAYING;
+let currentLevelIndex = 0;
+
 
 window.addEventListener("keydown", (event) => {
     if(event.key.toLowerCase() === "r" &&
@@ -251,6 +306,8 @@ function drawBall() {
 }
 
 function drawHud(){
+    const currentLevel = getCurrentLevel();
+
     ctx.fillStyle = "white";
     ctx.font = "20px Arial";
 
@@ -259,6 +316,13 @@ function drawHud(){
 
     ctx.textAlign = "right";
     ctx.fillText(`Scores: ${score}`, canvas.width - 20, 30 );
+
+    ctx.textAlign = "center";
+    ctx.fillText(
+        `Level ${currentLevel.id}/${LEVELS.length}: ${currentLevel.name}`,
+        canvas.width / 2,
+        30
+    );
 
     ctx.textAlign = "left";
     ctx.font = "16px Arial";
@@ -303,6 +367,10 @@ function draw() {
     }
     drawHud();
     drawGameOver();
+}
+
+function getCurrentLevel(){
+    return LEVELS[currentLevelIndex];
 }
 
 function gameLoop(timestamp){
