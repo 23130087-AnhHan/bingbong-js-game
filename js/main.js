@@ -3,8 +3,10 @@ const ctx= canvas.getContext('2d');
 
 let lastTime=0;
 const INITIAL_LIVES = 3;
+const POINTS_PER_HIT = 10;
 
 let lives=INITIAL_LIVES;
+let score=0;
 let isGameOver = false;
 
 const paddle= {
@@ -102,6 +104,8 @@ function handlePaddleCollision(){
         overlapsVertically &&
         ball.velocityY>0
     ){
+        score += POINTS_PER_HIT;
+
         ball.y =paddle.y - ball.radius;
 
         const paddleCenter=
@@ -155,6 +159,7 @@ function resetBall(){
 
 function restartGame(){
     lives= INITIAL_LIVES;
+    score = 0;
     isGameOver= false;
 
     resetPaddle();
@@ -241,8 +246,13 @@ function drawHud(){
     ctx.fillStyle = "white";
     ctx.font = "20px Arial";
 
+    ctx.textAlign = "left";
     ctx.fillText(`Lives: ${lives}`, 20, 30 );
 
+    ctx.textAlign = "right";
+    ctx.fillText(`Scores: ${score}`, canvas.width - 20, 30 );
+
+    ctx.textAlign = "left";
     ctx.font = "16px Arial";
     ctx.fillText(
         "Move: A / D or <- / ->", 20, 55
@@ -268,7 +278,7 @@ function drawGameOver(){
     ctx.fillText("Game Over!", centerX, centerY - 30);
 
     ctx.font = "20px Arial";
-    ctx.fillText("No lives remaining", centerX, centerY + 20);
+    ctx.fillText(`Score: ${score}`, centerX, centerY + 20);
 
     ctx.font = "18px Arial";
     ctx.fillText("Press R to Restart", centerX, centerY + 60);
@@ -283,10 +293,8 @@ function draw() {
         drawPaddle();
         drawBall();
     }
-
     drawHud();
     drawGameOver();
-
 }
 
 function gameLoop(timestamp){
