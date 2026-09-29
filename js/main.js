@@ -1,13 +1,8 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx= canvas.getContext('2d');
 
-let lastTime=0;
 const INITIAL_LIVES = 3;
 const POINTS_PER_HIT = 10;
-
-let lives=INITIAL_LIVES;
-let score=0;
-let isGameOver = false;
 
 const paddle= {
     width: 120,
@@ -32,8 +27,24 @@ const ball ={
 paddle.x = (canvas.width - paddle.width) / 2;
 const MAX_BOUNCE_ANGLE = Math.PI / 3;
 
+const GAME_STATES = Object.freeze({
+    PLAYING: "playing",
+    GAME_OVER: "gameOver"
+});
+
+let lastTime=0;
+let lives=INITIAL_LIVES;
+let score=0;
+let gameState = GAME_STATES.PLAYING;
+
 window.addEventListener("keydown", (event) => {
-     if (
+    if(event.key.toLowerCase() === "r" &&
+        gameState=== GAME_STATES.GAME_OVER
+    ) {
+        restartGame();
+    }
+
+    if (
          event.key === "ArrowLeft" ||
          event.key === "ArrowRight"
      ) {
@@ -48,9 +59,6 @@ window.addEventListener("keydown", (event) => {
         paddle.moveRight= true;
     }
 
-    if(event.key.toLowerCase() === "r" && isGameOver) {
-        restartGame();
-    }
 });
 
 window.addEventListener("keyup", (event) => {
@@ -121,7 +129,7 @@ function handlePaddleCollision(){
 
         const speed = Math.hypot(
             ball.velocityX,
-            ball.velocityY,
+            ball.velocityY
         );
 
         ball.velocityX=
@@ -160,7 +168,7 @@ function resetBall(){
 function restartGame(){
     lives= INITIAL_LIVES;
     score = 0;
-    isGameOver= false;
+    gameState= GAME_STATES.PLAYING;
 
     resetPaddle();
     resetBall();
@@ -172,7 +180,7 @@ function handleBallMiss(){
 
     if (lives <= 0) {
         lives = 0;
-        isGameOver = true;
+        gameState = GAME_STATES.GAME_OVER;
         return;
     }
     resetBall();
@@ -207,7 +215,7 @@ function updateBall(deltaTime) {
 }
 
 function update(deltaTime) {
-    if(isGameOver){
+    if(gameState !== GAME_STATES.PLAYING){
         return;
     }
     updatePaddle(deltaTime);
@@ -260,7 +268,7 @@ function drawHud(){
 }
 
 function drawGameOver(){
-    if(!isGameOver){
+    if(gameState !== GAME_STATES.GAME_OVER){
         return;
     }
     const centerX = canvas.width / 2;
@@ -289,7 +297,7 @@ function drawGameOver(){
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (!isGameOver) {
+    if (gameState === GAME_STATES.PLAYING) {
         drawPaddle();
         drawBall();
     }
