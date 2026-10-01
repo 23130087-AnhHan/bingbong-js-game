@@ -95,6 +95,14 @@ let currentLevelIndex = 0;
 
 
 window.addEventListener("keydown", (event) => {
+    if (
+        event.key === "Enter" &&
+        gameState === GAME_STATES.LEVEL_COMPLETE
+    ) {
+        advanceToNextLevel();
+        return;
+    }
+
     if(event.key.toLowerCase() === "r" &&
         gameState=== GAME_STATES.GAME_OVER
     ) {
@@ -222,15 +230,18 @@ function resetBall(){
         BALL_INITIAL_VELOCITY_Y ;
 }
 
-function restartGame(){
+function resetLevelState(){
     lives= INITIAL_LIVES;
     score = 0;
-    gameState= GAME_STATES.PLAYING;
 
     resetPaddle();
     resetBall();
 }
 
+function restartGame(){
+    resetLevelState();
+    gameState= GAME_STATES.PLAYING;
+}
 
 function handleBallMiss(){
     lives --;
@@ -261,6 +272,21 @@ function checkLevelCompletion(){
     if(score >= currentLevel.targetScore){
         gameState = GAME_STATES.LEVEL_COMPLETE;
     }
+}
+
+function advanceToNextLevel(){
+    if(gameState !== GAME_STATES.LEVEL_COMPLETE){
+        return;
+    }
+
+    if(currentLevelIndex >= LEVELS.length - 1){
+        return;
+    }
+    currentLevelIndex++;
+
+    resetLevelState();
+
+    gameState = GAME_STATES.PLAYING;
 }
 
 function updatePaddle(deltaTime){
@@ -404,6 +430,13 @@ function drawLevelComplete() {
         `Score: ${score}`,
         centerX,
         centerY + 50
+    );
+
+    ctx.font = "18px Arial";
+    ctx.fillText(
+        "Press Enter to Continue",
+        centerX,
+        centerY + 90
     );
 
     ctx.textAlign = "left";
