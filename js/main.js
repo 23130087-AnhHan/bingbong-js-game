@@ -29,15 +29,80 @@ const MAX_BOUNCE_ANGLE = Math.PI / 3;
 
 const GAME_STATES = Object.freeze({
     PLAYING: "playing",
+    LEVEL_COMPLETE: "levelComplete",
     GAME_OVER: "gameOver"
 });
+
+const LEVELS = Object.freeze([
+    Object.freeze({
+        id: 1,
+        name: "First Bounce",
+        targetScore: 50
+    }),
+
+    Object.freeze({
+        id: 2,
+        name: "Speed Rush"
+    }),
+
+    Object.freeze({
+        id: 3,
+        name: "Moving Walls"
+    }),
+
+    Object.freeze({
+        id: 4,
+        name: "Brick Storm"
+    }),
+
+    Object.freeze({
+        id: 5,
+        name: "Survival "
+    }),
+
+    Object.freeze({
+        id: 6,
+        name: "Multiball Chaos"
+    }),
+
+    Object.freeze({
+        id: 7,
+        name: "Portal Maze"
+    }),
+
+    Object.freeze({
+        id: 8,
+        name: "Power Battle"
+    }),
+
+    Object.freeze({
+        id: 9,
+        name: "Gravity Zone"
+    }),
+
+    Object.freeze({
+        id: 10,
+        name: "Final Boss"
+    })
+]);
+
 
 let lastTime=0;
 let lives=INITIAL_LIVES;
 let score=0;
 let gameState = GAME_STATES.PLAYING;
+let currentLevelIndex = 0;
+
 
 window.addEventListener("keydown", (event) => {
+    if (
+        event.key === "Enter" &&
+        gameState === GAME_STATES.LEVEL_COMPLETE
+    ) {
+        advanceToNextLevel();
+        return;
+    }
+
     if(event.key.toLowerCase() === "r" &&
         gameState=== GAME_STATES.GAME_OVER
     ) {
@@ -165,15 +230,18 @@ function resetBall(){
         BALL_INITIAL_VELOCITY_Y ;
 }
 
-function restartGame(){
+function resetLevelState(){
     lives= INITIAL_LIVES;
     score = 0;
-    gameState= GAME_STATES.PLAYING;
 
     resetPaddle();
     resetBall();
 }
 
+function restartGame(){
+    resetLevelState();
+    gameState= GAME_STATES.PLAYING;
+}
 
 function handleBallMiss(){
     lives --;
@@ -186,6 +254,40 @@ function handleBallMiss(){
     resetBall();
 }
 
+function getCurrentLevel(){
+    return LEVELS[currentLevelIndex];
+}
+
+function checkLevelCompletion(){
+    if(gameState !== GAME_STATES.PLAYING){
+        return;
+    }
+
+    const currentLevel = getCurrentLevel();
+
+    if(typeof currentLevel.targetScore !== "number"){
+        return;
+    }
+
+    if(score >= currentLevel.targetScore){
+        gameState = GAME_STATES.LEVEL_COMPLETE;
+    }
+}
+
+function advanceToNextLevel(){
+    if(gameState !== GAME_STATES.LEVEL_COMPLETE){
+        return;
+    }
+
+    if(currentLevelIndex >= LEVELS.length - 1){
+        return;
+    }
+    currentLevelIndex++;
+
+    resetLevelState();
+
+    gameState = GAME_STATES.PLAYING;
+}
 
 function updatePaddle(deltaTime){
     if(paddle.moveLeft){
@@ -220,6 +322,8 @@ function update(deltaTime) {
     }
     updatePaddle(deltaTime);
     updateBall(deltaTime);
+
+    checkLevelCompletion();
 }
 
 function drawPaddle() {
@@ -251,6 +355,8 @@ function drawBall() {
 }
 
 function drawHud(){
+    const currentLevel = getCurrentLevel();
+
     ctx.fillStyle = "white";
     ctx.font = "20px Arial";
 
@@ -260,11 +366,80 @@ function drawHud(){
     ctx.textAlign = "right";
     ctx.fillText(`Scores: ${score}`, canvas.width - 20, 30 );
 
+    ctx.textAlign = "center";
+    ctx.fillText(
+        `Level ${currentLevel.id}/${LEVELS.length}: ${currentLevel.name}`,
+        canvas.width / 2,
+        30
+    );
+
     ctx.textAlign = "left";
     ctx.font = "16px Arial";
     ctx.fillText(
         "Move: A / D or <- / ->", 20, 55
     );
+
+    if (typeof currentLevel.targetScore === "number") {
+        ctx.textAlign = "center";
+        ctx.fillText(
+            `Target: ${currentLevel.targetScore} points`,
+            canvas.width / 2,
+            55
+        );
+    }
+    ctx.textAlign = "left";
+}
+
+function drawLevelComplete() {
+    if (gameState !== GAME_STATES.LEVEL_COMPLETE) {
+        return;
+    }
+
+    const currentLevel = getCurrentLevel();
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+
+    ctx.font = "42px Arial";
+    ctx.fillText(
+        "LEVEL COMPLETE!",
+        centerX,
+        centerY - 35
+    );
+
+    ctx.font = "24px Arial";
+    ctx.fillText(
+        currentLevel.name,
+        centerX,
+        centerY + 10
+    );
+
+    ctx.font = "18px Arial";
+    ctx.fillText(
+        `Score: ${score}`,
+        centerX,
+        centerY + 50
+    );
+
+    ctx.font = "18px Arial";
+    ctx.fillText(
+        "Press Enter to Continue",
+        centerX,
+        centerY + 90
+    );
+
+    ctx.textAlign = "left";
 }
 
 function drawGameOver(){
@@ -302,6 +477,7 @@ function draw() {
         drawBall();
     }
     drawHud();
+    drawLevelComplete();
     drawGameOver();
 }
 
