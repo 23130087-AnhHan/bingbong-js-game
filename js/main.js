@@ -42,7 +42,10 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 2,
-        name: "Speed Rush"
+        name: "Speed Rush",
+        targetHits: 8,
+        speedMultiplierPerHit: 1.08,
+        maxBallSpeed: 600
     }),
 
     Object.freeze({
@@ -57,7 +60,7 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 5,
-        name: "Survival "
+        name: "Survival"
     }),
 
     Object.freeze({
@@ -92,6 +95,7 @@ let lives=INITIAL_LIVES;
 let score=0;
 let gameState = GAME_STATES.PLAYING;
 let currentLevelIndex = 0;
+let levelHits = 0;
 
 
 window.addEventListener("keydown", (event) => {
@@ -107,6 +111,11 @@ window.addEventListener("keydown", (event) => {
         gameState=== GAME_STATES.GAME_OVER
     ) {
         restartGame();
+        return;
+    }
+
+    if (gameState !== GAME_STATES.PLAYING) {
+        return;
     }
 
     if (
@@ -153,6 +162,33 @@ function handleWallCollision(){
     }
 }
 
+function getPaddleBounceSpeed() {
+    const currentSpeed = Math.hypot(
+        ball.velocityX,
+        ball.velocityY
+    );
+
+    const currentLevel = getCurrentLevel();
+
+    if (
+        typeof currentLevel.speedMultiplierPerHit !== "number"
+    ) {
+        return currentSpeed;
+    }
+
+    const increasedSpeed =
+        currentSpeed * currentLevel.speedMultiplierPerHit;
+
+    if (typeof currentLevel.maxBallSpeed !== "number") {
+        return increasedSpeed;
+    }
+
+    return Math.min(
+        increasedSpeed,
+        currentLevel.maxBallSpeed
+    );
+}
+
 function handlePaddleCollision(){
     const ballLeft = ball.x - ball.radius;
     const ballRight = ball.x + ball.radius;
@@ -178,6 +214,7 @@ function handlePaddleCollision(){
         ball.velocityY>0
     ){
         score += POINTS_PER_HIT;
+        levelHits++;
 
         ball.y =paddle.y - ball.radius;
 
@@ -192,10 +229,7 @@ function handlePaddleCollision(){
 
         const bounceAngle = clampedHitPosition * MAX_BOUNCE_ANGLE;
 
-        const speed = Math.hypot(
-            ball.velocityX,
-            ball.velocityY
-        );
+        const speed = getPaddleBounceSpeed();
 
         ball.velocityX=
             speed * Math.sin(bounceAngle);
@@ -204,6 +238,7 @@ function handlePaddleCollision(){
             -speed * Math.cos(bounceAngle);
     }
 }
+
 
 function hasBallMissed(){
     return ball.y - ball.radius > canvas.height;
@@ -233,6 +268,7 @@ function resetBall(){
 function resetLevelState(){
     lives= INITIAL_LIVES;
     score = 0;
+    levelHits = 0;
 
     resetPaddle();
     resetBall();
@@ -245,6 +281,12 @@ function restartGame(){
 
 function handleBallMiss(){
     lives --;
+
+    const currentLevel = getCurrentLevel();
+
+    if (typeof currentLevel.targetHits === "number") {
+        levelHits = 0;
+    }
 
     if (lives <= 0) {
         lives = 0;
@@ -265,11 +307,15 @@ function checkLevelCompletion(){
 
     const currentLevel = getCurrentLevel();
 
-    if(typeof currentLevel.targetScore !== "number"){
-        return;
-    }
+    const reachedTargetScore =
+        typeof currentLevel.targetScore === "number" &&
+        score >= currentLevel.targetScore;
 
-    if(score >= currentLevel.targetScore){
+    const reachedTargetHits =
+        typeof currentLevel.targetHits === "number" &&
+        levelHits >= currentLevel.targetHits;
+
+    if (reachedTargetScore || reachedTargetHits) {
         gameState = GAME_STATES.LEVEL_COMPLETE;
     }
 }
@@ -364,13 +410,10 @@ function drawHud(){
     ctx.fillText(`Lives: ${lives}`, 20, 30 );
 
     ctx.textAlign = "right";
-    ctx.fillText(`Scores: ${score}`, canvas.width - 20, 30 );
+    ctx.fillText(`Score: ${score}`, canvas.width - 20, 30 );
 
     ctx.textAlign = "center";
-    ctx.fillText(
-        `Level ${currentLevel.id}/${LEVELS.length}: ${currentLevel.name}`,
-        canvas.width / 2,
-        30
+    ctx.fillText(`Level ${currentLevel.id}/${LEVELS.length}: ${currentLevel.name}`, canvas.width / 2, 30
     );
 
     ctx.textAlign = "left";
@@ -387,6 +430,16 @@ function drawHud(){
             55
         );
     }
+
+    if (typeof currentLevel.targetHits === "number") {
+        ctx.textAlign = "center";
+        ctx.fillText(
+            `Hit Streak: ${levelHits}/${currentLevel.targetHits}`,
+            canvas.width / 2,
+            55
+        );
+    }
+
     ctx.textAlign = "left";
 }
 
