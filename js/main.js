@@ -4,6 +4,12 @@ const ctx= canvas.getContext('2d');
 const INITIAL_LIVES = 3;
 const POINTS_PER_BRICK_HIT = 10;
 
+const BRICK_STYLES = Object.freeze({
+    1: "#ffffff",
+    2: "#bdbdbd",
+    3: "#8a8a8a"
+});
+
 const BRICK_CONFIG = Object.freeze({
     rows: 5,
     columns: 7,
@@ -50,20 +56,20 @@ const GAME_STATES = Object.freeze({
 const LEVELS = Object.freeze([
     Object.freeze({
         id: 1,
-        name: "Classic Breakout"
+        name: "Classic Breakout",
+        brickHpByRow: [1, 1, 1, 1, 1]
     }),
 
     Object.freeze({
         id: 2,
-        name: "Speed Rush",
-        speedMultiplierPerHit: 1.08,
-        maxBallSpeed: 600
+        name: "Hard Shell",
+        brickHpByRow: [2, 2, 2, 1, 1]
     }),
 
     Object.freeze({
         id: 3,
-        name: "Moving Walls",
-        movingWallsEnabled: true
+        name: "Moving Formation",
+        brickHpByRow: [3, 2, 2, 1, 1]
     }),
 
     Object.freeze({
@@ -296,6 +302,7 @@ function createClassicBrickLayout() {
                 row *
                 (BRICK_CONFIG.height + BRICK_CONFIG.gapY);
 
+            const hp = getBrickHpForRow(row);
             bricks.push({
                 x: x,
                 y: y,
@@ -303,8 +310,8 @@ function createClassicBrickLayout() {
                 width: BRICK_CONFIG.width,
                 height: BRICK_CONFIG.height,
 
-                hp: 1,
-                maxHp: 1,
+                hp: hp,
+                maxHp: hp,
 
                 destroyed: false
             });
@@ -328,6 +335,26 @@ function areAllBricksDestroyed() {
     return bricks.every(
         brick => brick.destroyed
     );
+}
+
+function getBrickHpForRow(row) {
+    const currentLevel = getCurrentLevel();
+
+    if (!Array.isArray(currentLevel.brickHpByRow)) {
+        return 1;
+    }
+
+    const configuredHp =
+        currentLevel.brickHpByRow[row];
+
+    if (
+        typeof configuredHp !== "number" ||
+        configuredHp < 1
+    ) {
+        return 1;
+    }
+
+    return configuredHp;
 }
 
 
@@ -468,7 +495,7 @@ function resolveBrickCollision(
 
 function damageBrick(brick) {
     if (brick.destroyed) {
-        return;
+        return false;
     }
 
     brick.hp--;
@@ -478,8 +505,32 @@ function damageBrick(brick) {
     if (brick.hp <= 0) {
         brick.hp = 0;
         brick.destroyed = true;
+
+        return true;
     }
+
+    return false;
 }
+
+function getBrickColor(brick) {
+    return (
+        BRICK_STYLES[brick.maxHp] ||
+        "#6f6f6f"
+    );
+}
+
+function getBrickDamageAlpha(brick) {
+    if (brick.maxHp <= 1) {
+        return 1;
+    }
+
+    const healthRatio =
+        brick.hp / brick.maxHp;
+
+    return 0.55 + healthRatio * 0.45;
+}
+
+
 
 function handleBrickCollisions(
     previousX,
@@ -659,12 +710,16 @@ function drawHud() {
 }
 
 function drawBricks() {
-    ctx.fillStyle = "white";
-
     for (const brick of bricks) {
         if (brick.destroyed) {
             continue;
         }
+
+        ctx.fillStyle =
+            getBrickColor(brick);
+
+        ctx.globalAlpha =
+            getBrickDamageAlpha(brick);
 
         ctx.fillRect(
             brick.x,
@@ -673,6 +728,8 @@ function drawBricks() {
             brick.height
         );
     }
+
+    ctx.globalAlpha = 1;
 }
 
 function drawLevelComplete() {
