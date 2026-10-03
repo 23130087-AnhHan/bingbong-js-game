@@ -6,15 +6,15 @@ const POINTS_PER_HIT = 10;
 
 const BRICK_CONFIG = Object.freeze({
     rows: 5,
-    columns: 8,
+    columns: 7,
 
-    width: 80,
+    width: 72,
     height: 24,
 
-    gapX: 10,
+    gapX: 14,
     gapY: 10,
 
-    topOffset: 90
+    topOffset: 100
 });
 
 const paddle= {
@@ -27,6 +27,7 @@ const paddle= {
     moveRight: false
 };
 
+const MIN_BOUNCE_ANGLE = Math.PI / 12;
 const BALL_INITIAL_VELOCITY_X = 220;
 const BALL_INITIAL_VELOCITY_Y = -260;
 const ball ={
@@ -241,14 +242,31 @@ function handlePaddleCollision(){
         const clampedHitPosition =
             Math.max(-1, Math.min(1, hitPosition));
 
-        const bounceAngle = clampedHitPosition * MAX_BOUNCE_ANGLE;
+        let bounceAngle =
+            clampedHitPosition * MAX_BOUNCE_ANGLE;
+
+        if (Math.abs(bounceAngle) < MIN_BOUNCE_ANGLE) {
+            let direction = Math.sign(clampedHitPosition);
+
+            if (direction === 0) {
+                direction = Math.sign(ball.velocityX);
+            }
+
+            if (direction === 0) {
+                direction =
+                    Math.random() < 0.5 ? -1 : 1;
+            }
+
+            bounceAngle =
+                direction * MIN_BOUNCE_ANGLE;
+        }
 
         const speed = getPaddleBounceSpeed();
 
-        ball.velocityX=
+        ball.velocityX =
             speed * Math.sin(bounceAngle);
 
-        ball.velocityY=
+        ball.velocityY =
             -speed * Math.cos(bounceAngle);
     }
 }
@@ -314,18 +332,22 @@ function resetPaddle(){
     paddle.moveRight = false;
 }
 
-function resetBall(){
-    ball.x = canvas.width/2;
-    ball.y = canvas.height/2;
+function resetBall() {
+    ball.x =
+        paddle.x + paddle.width / 2;
+
+    ball.y =
+        paddle.y - ball.radius - 2;
 
     const horizontalDirection =
         Math.random() < 0.5 ? -1 : 1;
 
     ball.velocityX =
-        BALL_INITIAL_VELOCITY_X * horizontalDirection;
+        BALL_INITIAL_VELOCITY_X *
+        horizontalDirection;
 
     ball.velocityY =
-        BALL_INITIAL_VELOCITY_Y ;
+        BALL_INITIAL_VELOCITY_Y;
 }
 
 function resetLevelState(){
@@ -360,6 +382,119 @@ function handleBallMiss(){
     resetBall();
 }
 
+function isBallCollidingWithBrick(brick) {
+    const closestX = Math.max(
+        brick.x,
+        Math.min(ball.x, brick.x + brick.width)
+    );
+
+    const closestY = Math.max(
+        brick.y,
+        Math.min(ball.y, brick.y + brick.height)
+    );
+
+    const distanceX = ball.x - closestX;
+    const distanceY = ball.y - closestY;
+
+    const distanceSquared =
+        distanceX * distanceX +
+        distanceY * distanceY;
+
+    return distanceSquared <=
+        ball.radius * ball.radius;
+}
+
+function resolveBrickCollision(
+    brick,
+    previousX,
+    previousY
+) {
+    const wasAbove =
+        previousY + ball.radius <= brick.y;
+
+    const wasBelow =
+        previousY - ball.radius >=
+        brick.y + brick.height;
+
+    const wasLeft =
+        previousX + ball.radius <= brick.x;
+
+    const wasRight =
+        previousX - ball.radius >=
+        brick.x + brick.width;
+
+    if (wasAbove) {
+        ball.y = brick.y - ball.radius;
+        ball.velocityY =
+            -Math.abs(ball.velocityY);
+        return;
+    }
+
+    if (wasBelow) {
+        ball.y =
+            brick.y +
+            brick.height +
+            ball.radius;
+
+        ball.velocityY =
+            Math.abs(ball.velocityY);
+        return;
+    }
+
+    if (wasLeft) {
+        ball.x = brick.x - ball.radius;
+        ball.velocityX =
+            -Math.abs(ball.velocityX);
+        return;
+    }
+
+    if (wasRight) {
+        ball.x =
+            brick.x +
+            brick.width +
+            ball.radius;
+
+        ball.velocityX =
+            Math.abs(ball.velocityX);
+        return;
+    }
+
+    ball.velocityY *= -1;
+}
+
+function damageBrick(brick) {
+    brick.hp--;
+
+    if (brick.hp <= 0) {
+        brick.hp = 0;
+        brick.destroyed = true;
+    }
+}
+
+function handleBrickCollisions(
+    previousX,
+    previousY
+) {
+    for (const brick of bricks) {
+        if (brick.destroyed) {
+            continue;
+        }
+
+        if (!isBallCollidingWithBrick(brick)) {
+            continue;
+        }
+
+        damageBrick(brick);
+
+        resolveBrickCollision(
+            brick,
+            previousX,
+            previousY
+        );
+
+        break;
+    }
+}
 function getCurrentLevel(){
     return LEVELS[currentLevelIndex];
 }
@@ -415,11 +550,22 @@ function updatePaddle(deltaTime){
 }
 
 function updateBall(deltaTime) {
-    ball.x += ball.velocityX * deltaTime;
-    ball.y += ball.velocityY * deltaTime;
+    const previousX = ball.x;
+    const previousY = ball.y;
+
+    ball.x +=
+        ball.velocityX * deltaTime;
+
+    ball.y +=
+        ball.velocityY * deltaTime;
 
     handleWallCollision();
     handlePaddleCollision();
+
+    handleBrickCollisions(
+        previousX,
+        previousY
+    );
 
     if (hasBallMissed()) {
         handleBallMiss();
@@ -604,18 +750,24 @@ function drawGameOver(){
 }
 
 function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    drawBricks();
 
     if (gameState === GAME_STATES.PLAYING) {
         drawPaddle();
         drawBall();
     }
-    drawBricks();
+
     drawHud();
     drawLevelComplete();
     drawGameOver();
 }
-
 function gameLoop(timestamp){
     if(lastTime === 0){
         lastTime = timestamp;
@@ -627,8 +779,11 @@ function gameLoop(timestamp){
     update(deltaTime);
     draw();
 
-    resetBricks();
     requestAnimationFrame(gameLoop);
 }
+
+resetPaddle();
+resetBall();
+resetBricks();
 
 requestAnimationFrame(gameLoop);
