@@ -48,9 +48,22 @@ paddle.x = (canvas.width - paddle.width) / 2;
 const MAX_BOUNCE_ANGLE = Math.PI / 3;
 
 const GAME_STATES = Object.freeze({
+    LEVEL_SELECT: "levelSelect",
     PLAYING: "playing",
     LEVEL_COMPLETE: "levelComplete",
     GAME_OVER: "gameOver"
+});
+
+const LEVEL_MENU_CONFIG = Object.freeze({
+    columns: 5,
+
+    cardWidth: 130,
+    cardHeight: 70,
+
+    gapX: 15,
+    gapY: 20,
+
+    startY: 180
 });
 
 const LEVELS = Object.freeze([
@@ -112,11 +125,23 @@ const LEVELS = Object.freeze([
 let lastTime=0;
 let lives=INITIAL_LIVES;
 let score=0;
-let gameState = GAME_STATES.PLAYING;
+let gameState = GAME_STATES.LEVEL_SELECT;
 let currentLevelIndex = 0;
 let bricks = [];
 
 window.addEventListener("keydown", (event) => {
+    if (
+        event.key.toLowerCase() === "m" &&
+        gameState !== GAME_STATES.LEVEL_SELECT
+    ) {
+        openLevelSelectMenu();
+        return;
+    }
+
+    if (gameState === GAME_STATES.LEVEL_SELECT) {
+        handleLevelSelectKey(event.key);
+        return;
+    }
     if (
         event.key === "Enter" &&
         gameState === GAME_STATES.LEVEL_COMPLETE
@@ -163,6 +188,128 @@ window.addEventListener("keyup", (event) => {
     }
 });
 
+function getLevelMenuCards() {
+    const totalWidth =
+        LEVEL_MENU_CONFIG.columns *
+        LEVEL_MENU_CONFIG.cardWidth +
+        (LEVEL_MENU_CONFIG.columns - 1) *
+        LEVEL_MENU_CONFIG.gapX;
+
+    const startX =
+        (canvas.width - totalWidth) / 2;
+
+    return LEVELS.map((level, index) => {
+        const row =
+            Math.floor(
+                index / LEVEL_MENU_CONFIG.columns
+            );
+
+        const column =
+            index % LEVEL_MENU_CONFIG.columns;
+
+        const x =
+            startX +
+            column *
+            (
+                LEVEL_MENU_CONFIG.cardWidth +
+                LEVEL_MENU_CONFIG.gapX
+            );
+
+        const y =
+            LEVEL_MENU_CONFIG.startY +
+            row *
+            (
+                LEVEL_MENU_CONFIG.cardHeight +
+                LEVEL_MENU_CONFIG.gapY
+            );
+
+        return {
+            levelIndex: index,
+            level: level,
+
+            x: x,
+            y: y,
+
+            width: LEVEL_MENU_CONFIG.cardWidth,
+            height: LEVEL_MENU_CONFIG.cardHeight
+        };
+    });
+}
+
+function handleLevelSelectKey(key) {
+    if (key >= "1" && key <= "9") {
+        startLevel(Number(key) - 1);
+        return;
+    }
+
+    if (key === "0" && LEVELS.length >= 10) {
+        startLevel(9);
+    }
+}
+
+function startLevel(levelIndex) {
+    if (
+        levelIndex < 0 ||
+        levelIndex >= LEVELS.length
+    ) {
+        return;
+    }
+
+    currentLevelIndex = levelIndex;
+
+    resetLevelState();
+
+    gameState = GAME_STATES.PLAYING;
+}
+
+function openLevelSelectMenu() {
+    paddle.moveLeft = false;
+    paddle.moveRight = false;
+
+    gameState = GAME_STATES.LEVEL_SELECT;
+}
+
+canvas.addEventListener("click", (event) => {
+    if (
+        gameState !== GAME_STATES.LEVEL_SELECT
+    ) {
+        return;
+    }
+
+    const rect =
+        canvas.getBoundingClientRect();
+
+    const scaleX =
+        canvas.width / rect.width;
+
+    const scaleY =
+        canvas.height / rect.height;
+
+    const mouseX =
+        (event.clientX - rect.left) * scaleX;
+
+    const mouseY =
+        (event.clientY - rect.top) * scaleY;
+
+    const cards = getLevelMenuCards();
+
+    const clickedCard = cards.find((card) => {
+        return (
+            mouseX >= card.x &&
+            mouseX <= card.x + card.width &&
+            mouseY >= card.y &&
+            mouseY <= card.y + card.height
+        );
+    });
+
+    if (!clickedCard) {
+        return;
+    }
+
+    startLevel(clickedCard.levelIndex);
+});
+
+
 function handleWallCollision(){
     if(ball.x -ball.radius <=0){
         ball.x = ball.radius;
@@ -178,33 +325,6 @@ function handleWallCollision(){
         ball.y = ball.radius;
         ball.velocityY = Math.abs(ball.velocityY);
     }
-}
-
-function getPaddleBounceSpeed() {
-    const currentSpeed = Math.hypot(
-        ball.velocityX,
-        ball.velocityY
-    );
-
-    const currentLevel = getCurrentLevel();
-
-    if (
-        typeof currentLevel.speedMultiplierPerHit !== "number"
-    ) {
-        return currentSpeed;
-    }
-
-    const increasedSpeed =
-        currentSpeed * currentLevel.speedMultiplierPerHit;
-
-    if (typeof currentLevel.maxBallSpeed !== "number") {
-        return increasedSpeed;
-    }
-
-    return Math.min(
-        increasedSpeed,
-        currentLevel.maxBallSpeed
-    );
 }
 
 function handlePaddleCollision(){
@@ -261,7 +381,10 @@ function handlePaddleCollision(){
                 direction * MIN_BOUNCE_ANGLE;
         }
 
-        const speed = getPaddleBounceSpeed();
+        const speed = Math.hypot(
+            ball.velocityX,
+            ball.velocityY
+        );
 
         ball.velocityX =
             speed * Math.sin(bounceAngle);
@@ -570,19 +693,21 @@ function checkLevelCompletion() {
     }
 }
 
-function advanceToNextLevel(){
-    if(gameState !== GAME_STATES.LEVEL_COMPLETE){
+function advanceToNextLevel() {
+    if (
+        gameState !== GAME_STATES.LEVEL_COMPLETE
+    ) {
         return;
     }
 
-    if(currentLevelIndex >= LEVELS.length - 1){
+    const nextLevelIndex =
+        currentLevelIndex + 1;
+
+    if (nextLevelIndex >= LEVELS.length) {
         return;
     }
-    currentLevelIndex++;
 
-    resetLevelState();
-
-    gameState = GAME_STATES.PLAYING;
+    startLevel(nextLevelIndex);
 }
 
 function updatePaddle(deltaTime){
@@ -631,6 +756,81 @@ function update(deltaTime) {
     updateBall(deltaTime);
 
     checkLevelCompletion();
+}
+
+function drawLevelSelectMenu() {
+    const cards = getLevelMenuCards();
+
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+
+    ctx.font = "40px Arial";
+    ctx.fillText(
+        "SELECT LEVEL",
+        canvas.width / 2,
+        100
+    );
+
+    ctx.font = "16px Arial";
+    ctx.fillText(
+        "Choose any level to start",
+        canvas.width / 2,
+        135
+    );
+
+    for (const card of cards) {
+        ctx.fillStyle = "#1a1a1a";
+
+        ctx.fillRect(
+            card.x,
+            card.y,
+            card.width,
+            card.height
+        );
+
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 2;
+
+        ctx.strokeRect(
+            card.x,
+            card.y,
+            card.width,
+            card.height
+        );
+
+        ctx.fillStyle = "white";
+
+        ctx.font = "18px Arial";
+        ctx.fillText(
+            `Level ${card.level.id}`,
+            card.x + card.width / 2,
+            card.y + 28
+        );
+
+        ctx.font = "13px Arial";
+        ctx.fillText(
+            card.level.name,
+            card.x + card.width / 2,
+            card.y + 52
+        );
+    }
+
+    ctx.font = "15px Arial";
+    ctx.fillStyle = "white";
+
+    ctx.fillText(
+        "Click a level or press 1-9 / 0 for Level 10",
+        canvas.width / 2,
+        405
+    );
+
+    ctx.fillText(
+        "Press M during gameplay to return here",
+        canvas.width / 2,
+        435
+    );
+
+    ctx.textAlign = "left";
 }
 
 function drawPaddle() {
@@ -819,6 +1019,13 @@ function draw() {
         canvas.height
     );
 
+    if (
+        gameState === GAME_STATES.LEVEL_SELECT
+    ) {
+        drawLevelSelectMenu();
+        return;
+    }
+
     drawBricks();
 
     if (gameState === GAME_STATES.PLAYING) {
@@ -830,6 +1037,7 @@ function draw() {
     drawLevelComplete();
     drawGameOver();
 }
+
 function gameLoop(timestamp){
     if(lastTime === 0){
         lastTime = timestamp;
