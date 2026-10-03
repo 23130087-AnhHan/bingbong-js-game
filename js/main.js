@@ -4,6 +4,19 @@ const ctx= canvas.getContext('2d');
 const INITIAL_LIVES = 3;
 const POINTS_PER_HIT = 10;
 
+const BRICK_CONFIG = Object.freeze({
+    rows: 5,
+    columns: 8,
+
+    width: 80,
+    height: 24,
+
+    gapX: 10,
+    gapY: 10,
+
+    topOffset: 90
+});
+
 const paddle= {
     width: 120,
     height: 18,
@@ -50,7 +63,8 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 3,
-        name: "Moving Walls"
+        name: "Moving Walls",
+        movingWallsEnabled: true
     }),
 
     Object.freeze({
@@ -96,7 +110,7 @@ let score=0;
 let gameState = GAME_STATES.PLAYING;
 let currentLevelIndex = 0;
 let levelHits = 0;
-
+let bricks = [];
 
 window.addEventListener("keydown", (event) => {
     if (
@@ -244,6 +258,55 @@ function hasBallMissed(){
     return ball.y - ball.radius > canvas.height;
 }
 
+function createClassicBrickLayout() {
+    const bricks = [];
+
+    const totalWidth =
+        BRICK_CONFIG.columns * BRICK_CONFIG.width +
+        (BRICK_CONFIG.columns - 1) * BRICK_CONFIG.gapX;
+
+    const startX =
+        (canvas.width - totalWidth) / 2;
+
+    for (let row = 0; row < BRICK_CONFIG.rows; row++) {
+        for (
+            let column = 0;
+            column < BRICK_CONFIG.columns;
+            column++
+        ) {
+            const x =
+                startX +
+                column *
+                (BRICK_CONFIG.width + BRICK_CONFIG.gapX);
+
+            const y =
+                BRICK_CONFIG.topOffset +
+                row *
+                (BRICK_CONFIG.height + BRICK_CONFIG.gapY);
+
+            bricks.push({
+                x: x,
+                y: y,
+
+                width: BRICK_CONFIG.width,
+                height: BRICK_CONFIG.height,
+
+                hp: 1,
+                maxHp: 1,
+
+                destroyed: false
+            });
+        }
+    }
+
+    return bricks;
+}
+
+function resetBricks() {
+    bricks = createClassicBrickLayout();
+}
+
+
 function resetPaddle(){
     paddle.x = (canvas.width - paddle.width) / 2;
 
@@ -272,6 +335,7 @@ function resetLevelState(){
 
     resetPaddle();
     resetBall();
+    resetBricks();
 }
 
 function restartGame(){
@@ -443,6 +507,23 @@ function drawHud(){
     ctx.textAlign = "left";
 }
 
+function drawBricks() {
+    ctx.fillStyle = "white";
+
+    for (const brick of bricks) {
+        if (brick.destroyed) {
+            continue;
+        }
+
+        ctx.fillRect(
+            brick.x,
+            brick.y,
+            brick.width,
+            brick.height
+        );
+    }
+}
+
 function drawLevelComplete() {
     if (gameState !== GAME_STATES.LEVEL_COMPLETE) {
         return;
@@ -529,6 +610,7 @@ function draw() {
         drawPaddle();
         drawBall();
     }
+    drawBricks();
     drawHud();
     drawLevelComplete();
     drawGameOver();
@@ -545,6 +627,7 @@ function gameLoop(timestamp){
     update(deltaTime);
     draw();
 
+    resetBricks();
     requestAnimationFrame(gameLoop);
 }
 
