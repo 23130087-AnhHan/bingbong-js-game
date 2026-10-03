@@ -2,7 +2,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx= canvas.getContext('2d');
 
 const INITIAL_LIVES = 3;
-const POINTS_PER_HIT = 10;
+const POINTS_PER_BRICK_HIT = 10;
 
 const BRICK_CONFIG = Object.freeze({
     rows: 5,
@@ -50,14 +50,12 @@ const GAME_STATES = Object.freeze({
 const LEVELS = Object.freeze([
     Object.freeze({
         id: 1,
-        name: "First Bounce",
-        targetScore: 50
+        name: "Classic Breakout"
     }),
 
     Object.freeze({
         id: 2,
         name: "Speed Rush",
-        targetHits: 8,
         speedMultiplierPerHit: 1.08,
         maxBallSpeed: 600
     }),
@@ -110,7 +108,6 @@ let lives=INITIAL_LIVES;
 let score=0;
 let gameState = GAME_STATES.PLAYING;
 let currentLevelIndex = 0;
-let levelHits = 0;
 let bricks = [];
 
 window.addEventListener("keydown", (event) => {
@@ -228,9 +225,6 @@ function handlePaddleCollision(){
         overlapsVertically &&
         ball.velocityY>0
     ){
-        score += POINTS_PER_HIT;
-        levelHits++;
-
         ball.y =paddle.y - ball.radius;
 
         const paddleCenter=
@@ -320,6 +314,23 @@ function createClassicBrickLayout() {
     return bricks;
 }
 
+function getRemainingBrickCount() {
+    return bricks.filter(
+        brick => !brick.destroyed
+    ).length;
+}
+
+function areAllBricksDestroyed() {
+    if (bricks.length === 0) {
+        return false;
+    }
+
+    return bricks.every(
+        brick => brick.destroyed
+    );
+}
+
+
 function resetBricks() {
     bricks = createClassicBrickLayout();
 }
@@ -353,7 +364,6 @@ function resetBall() {
 function resetLevelState(){
     lives= INITIAL_LIVES;
     score = 0;
-    levelHits = 0;
 
     resetPaddle();
     resetBall();
@@ -367,12 +377,6 @@ function restartGame(){
 
 function handleBallMiss(){
     lives --;
-
-    const currentLevel = getCurrentLevel();
-
-    if (typeof currentLevel.targetHits === "number") {
-        levelHits = 0;
-    }
 
     if (lives <= 0) {
         lives = 0;
@@ -463,7 +467,13 @@ function resolveBrickCollision(
 }
 
 function damageBrick(brick) {
+    if (brick.destroyed) {
+        return;
+    }
+
     brick.hp--;
+
+    score += POINTS_PER_BRICK_HIT;
 
     if (brick.hp <= 0) {
         brick.hp = 0;
@@ -499,22 +509,12 @@ function getCurrentLevel(){
     return LEVELS[currentLevelIndex];
 }
 
-function checkLevelCompletion(){
-    if(gameState !== GAME_STATES.PLAYING){
+function checkLevelCompletion() {
+    if (gameState !== GAME_STATES.PLAYING) {
         return;
     }
 
-    const currentLevel = getCurrentLevel();
-
-    const reachedTargetScore =
-        typeof currentLevel.targetScore === "number" &&
-        score >= currentLevel.targetScore;
-
-    const reachedTargetHits =
-        typeof currentLevel.targetHits === "number" &&
-        levelHits >= currentLevel.targetHits;
-
-    if (reachedTargetScore || reachedTargetHits) {
+    if (areAllBricksDestroyed()) {
         gameState = GAME_STATES.LEVEL_COMPLETE;
     }
 }
@@ -610,45 +610,50 @@ function drawBall() {
     ctx.closePath();
 }
 
-function drawHud(){
+function drawHud() {
     const currentLevel = getCurrentLevel();
+    const remainingBricks =
+        getRemainingBrickCount();
 
     ctx.fillStyle = "white";
     ctx.font = "20px Arial";
 
     ctx.textAlign = "left";
-    ctx.fillText(`Lives: ${lives}`, 20, 30 );
+    ctx.fillText(
+        `Lives: ${lives}`,
+        20,
+        30
+    );
 
     ctx.textAlign = "right";
-    ctx.fillText(`Score: ${score}`, canvas.width - 20, 30 );
+    ctx.fillText(
+        `Score: ${score}`,
+        canvas.width - 20,
+        30
+    );
 
     ctx.textAlign = "center";
-    ctx.fillText(`Level ${currentLevel.id}/${LEVELS.length}: ${currentLevel.name}`, canvas.width / 2, 30
+    ctx.fillText(
+        `Level ${currentLevel.id}/${LEVELS.length}: ${currentLevel.name}`,
+        canvas.width / 2,
+        30
     );
+
+    ctx.font = "16px Arial";
 
     ctx.textAlign = "left";
-    ctx.font = "16px Arial";
     ctx.fillText(
-        "Move: A / D or <- / ->", 20, 55
+        "Move: A / D or <- / ->",
+        20,
+        55
     );
 
-    if (typeof currentLevel.targetScore === "number") {
-        ctx.textAlign = "center";
-        ctx.fillText(
-            `Target: ${currentLevel.targetScore} points`,
-            canvas.width / 2,
-            55
-        );
-    }
-
-    if (typeof currentLevel.targetHits === "number") {
-        ctx.textAlign = "center";
-        ctx.fillText(
-            `Hit Streak: ${levelHits}/${currentLevel.targetHits}`,
-            canvas.width / 2,
-            55
-        );
-    }
+    ctx.textAlign = "center";
+    ctx.fillText(
+        `Bricks: ${remainingBricks}/${bricks.length}`,
+        canvas.width / 2,
+        55
+    );
 
     ctx.textAlign = "left";
 }
