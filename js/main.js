@@ -11,9 +11,6 @@ const BRICK_STYLES = Object.freeze({
 });
 
 const BRICK_CONFIG = Object.freeze({
-    rows: 5,
-    columns: 7,
-
     width: 72,
     height: 24,
 
@@ -66,23 +63,45 @@ const LEVEL_MENU_CONFIG = Object.freeze({
     startY: 180
 });
 
+const DEFAULT_BRICK_LAYOUT = Object.freeze([
+    Object.freeze([1, 1, 1, 1, 1, 1, 1]),
+    Object.freeze([1, 1, 1, 1, 1, 1, 1]),
+    Object.freeze([1, 1, 1, 1, 1, 1, 1]),
+    Object.freeze([1, 1, 1, 1, 1, 1, 1]),
+    Object.freeze([1, 1, 1, 1, 1, 1, 1])
+]);
+
 const LEVELS = Object.freeze([
     Object.freeze({
         id: 1,
         name: "Classic Breakout",
-        brickHpByRow: [1, 1, 1, 1, 1]
+        brickLayout: DEFAULT_BRICK_LAYOUT
     }),
 
     Object.freeze({
         id: 2,
         name: "Hard Shell",
-        brickHpByRow: [2, 2, 2, 1, 1]
+
+        brickLayout: Object.freeze([
+            Object.freeze([2, 2, 2, 2, 2, 2, 2]),
+            Object.freeze([2, 2, 2, 2, 2, 2, 2]),
+            Object.freeze([0, 2, 2, 2, 2, 2, 0]),
+            Object.freeze([0, 1, 1, 1, 1, 1, 0]),
+            Object.freeze([0, 0, 1, 1, 1, 0, 0])
+        ])
     }),
 
     Object.freeze({
         id: 3,
         name: "Moving Formation",
-        brickHpByRow: [3, 2, 2, 1, 1]
+
+        brickLayout: Object.freeze([
+            Object.freeze([0, 0, 3, 3, 3, 0, 0]),
+            Object.freeze([0, 2, 2, 2, 2, 2, 0]),
+            Object.freeze([1, 1, 1, 1, 1, 1, 1]),
+            Object.freeze([0, 2, 2, 2, 2, 2, 0]),
+            Object.freeze([0, 0, 1, 1, 1, 0, 0])
+        ])
     }),
 
     Object.freeze({
@@ -225,10 +244,9 @@ function getLevelMenuCards() {
 
         return {
             levelIndex: index,
-            level: level,
-
-            x: x,
-            y: y,
+            level,
+            x,
+            y,
 
             width: LEVEL_MENU_CONFIG.cardWidth,
             height: LEVEL_MENU_CONFIG.cardHeight
@@ -399,41 +417,63 @@ function hasBallMissed(){
     return ball.y - ball.radius > canvas.height;
 }
 
-function createClassicBrickLayout() {
-    const bricks = [];
+function createBrickLayout() {
+    const createdBricks = [];
+
+    const layout = getCurrentBrickLayout();
+
+    const rowCount = layout.length;
+
+    const columnCount = Math.max(
+        ...layout.map(row => row.length)
+    );
 
     const totalWidth =
-        BRICK_CONFIG.columns * BRICK_CONFIG.width +
-        (BRICK_CONFIG.columns - 1) * BRICK_CONFIG.gapX;
+        columnCount * BRICK_CONFIG.width +
+        (columnCount - 1) * BRICK_CONFIG.gapX;
 
     const startX =
         (canvas.width - totalWidth) / 2;
 
-    for (let row = 0; row < BRICK_CONFIG.rows; row++) {
+    for (let row = 0; row < rowCount; row++) {
         for (
             let column = 0;
-            column < BRICK_CONFIG.columns;
+            column < layout[row].length;
             column++
         ) {
+            const hp = layout[row][column];
+
+            if (
+                typeof hp !== "number" ||
+                hp <= 0
+            ) {
+                continue;
+            }
+
             const x =
                 startX +
                 column *
-                (BRICK_CONFIG.width + BRICK_CONFIG.gapX);
+                (
+                    BRICK_CONFIG.width +
+                    BRICK_CONFIG.gapX
+                );
 
             const y =
                 BRICK_CONFIG.topOffset +
                 row *
-                (BRICK_CONFIG.height + BRICK_CONFIG.gapY);
+                (
+                    BRICK_CONFIG.height +
+                    BRICK_CONFIG.gapY
+                );
 
-            const hp = getBrickHpForRow(row);
-            bricks.push({
-                x: x,
-                y: y,
+            createdBricks.push({
+                x,
+                y,
 
                 width: BRICK_CONFIG.width,
                 height: BRICK_CONFIG.height,
 
-                hp: hp,
+                hp,
                 maxHp: hp,
 
                 destroyed: false
@@ -441,7 +481,7 @@ function createClassicBrickLayout() {
         }
     }
 
-    return bricks;
+    return createdBricks;
 }
 
 function getRemainingBrickCount() {
@@ -460,31 +500,25 @@ function areAllBricksDestroyed() {
     );
 }
 
-function getBrickHpForRow(row) {
+
+function getCurrentBrickLayout() {
     const currentLevel = getCurrentLevel();
 
-    if (!Array.isArray(currentLevel.brickHpByRow)) {
-        return 1;
-    }
-
-    const configuredHp =
-        currentLevel.brickHpByRow[row];
-
     if (
-        typeof configuredHp !== "number" ||
-        configuredHp < 1
+        !Array.isArray(currentLevel.brickLayout) ||
+        currentLevel.brickLayout.length === 0
     ) {
-        return 1;
+        return DEFAULT_BRICK_LAYOUT;
     }
 
-    return configuredHp;
+    return currentLevel.brickLayout;
 }
+
 
 
 function resetBricks() {
-    bricks = createClassicBrickLayout();
+    bricks = createBrickLayout();
 }
-
 
 function resetPaddle(){
     paddle.x = (canvas.width - paddle.width) / 2;
