@@ -101,7 +101,12 @@ const LEVELS = Object.freeze([
             Object.freeze([1, 1, 1, 1, 1, 1, 1]),
             Object.freeze([0, 2, 2, 2, 2, 2, 0]),
             Object.freeze([0, 0, 1, 1, 1, 0, 0])
-        ])
+        ]),
+
+        formationMovement: Object.freeze({
+            speed: 70,
+            maxOffsetX: 70
+        })
     }),
 
     Object.freeze({
@@ -147,6 +152,8 @@ let score=0;
 let gameState = GAME_STATES.LEVEL_SELECT;
 let currentLevelIndex = 0;
 let bricks = [];
+let brickFormationOffsetX = 0;
+let brickFormationDirection = 1;
 
 window.addEventListener("keydown", (event) => {
     if (
@@ -469,6 +476,7 @@ function createBrickLayout() {
             createdBricks.push({
                 x,
                 y,
+                baseX: x,
 
                 width: BRICK_CONFIG.width,
                 height: BRICK_CONFIG.height,
@@ -513,10 +521,8 @@ function getCurrentBrickLayout() {
 
     return currentLevel.brickLayout;
 }
-
-
-
 function resetBricks() {
+    resetBrickFormationMovement();
     bricks = createBrickLayout();
 }
 
@@ -713,8 +719,68 @@ function handleBrickCollisions(
         break;
     }
 }
+
+function getCurrentFormationMovement() {
+    const currentLevel = getCurrentLevel();
+
+    if (
+        !currentLevel.formationMovement ||
+        typeof currentLevel.formationMovement.speed !== "number" ||
+        typeof currentLevel.formationMovement.maxOffsetX !== "number"
+    ) {
+        return null;
+    }
+
+    return currentLevel.formationMovement;
+}
+
+function resetBrickFormationMovement() {
+    brickFormationOffsetX = 0;
+    brickFormationDirection = 1;
+}
+
 function getCurrentLevel(){
     return LEVELS[currentLevelIndex];
+}
+
+function updateBrickFormation(deltaTime) {
+    const movement =
+        getCurrentFormationMovement();
+
+    if (!movement) {
+        return;
+    }
+
+    brickFormationOffsetX +=
+        movement.speed *
+        brickFormationDirection *
+        deltaTime;
+
+    if (
+        brickFormationOffsetX >=
+        movement.maxOffsetX
+    ) {
+        brickFormationOffsetX =
+            movement.maxOffsetX;
+
+        brickFormationDirection = -1;
+    }
+
+    if (
+        brickFormationOffsetX <=
+        -movement.maxOffsetX
+    ) {
+        brickFormationOffsetX =
+            -movement.maxOffsetX;
+
+        brickFormationDirection = 1;
+    }
+
+    for (const brick of bricks) {
+        brick.x =
+            brick.baseX +
+            brickFormationOffsetX;
+    }
 }
 
 function checkLevelCompletion() {
@@ -783,10 +849,12 @@ function updateBall(deltaTime) {
 }
 
 function update(deltaTime) {
-    if(gameState !== GAME_STATES.PLAYING){
+    if (gameState !== GAME_STATES.PLAYING) {
         return;
     }
+
     updatePaddle(deltaTime);
+    updateBrickFormation(deltaTime);
     updateBall(deltaTime);
 
     checkLevelCompletion();
