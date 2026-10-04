@@ -63,6 +63,25 @@ const LEVEL_MENU_CONFIG = Object.freeze({
     startY: 180
 });
 
+const ITEM_TYPES = Object.freeze({
+    EXTRA_LIFE: "extraLife",
+    EXPAND_PADDLE: "expandPaddle",
+    SLOW_BALL: "slowBall"
+});
+
+const ITEM_LABELS = Object.freeze({
+    [ITEM_TYPES.EXTRA_LIFE]: "+1",
+    [ITEM_TYPES.EXPAND_PADDLE]: "W",
+    [ITEM_TYPES.SLOW_BALL]: "S"
+});
+
+const ITEM_CONFIG = Object.freeze({
+    width: 30,
+    height: 22,
+    fallSpeed: 140
+});
+
+
 const DEFAULT_BRICK_LAYOUT = Object.freeze([
     Object.freeze([1, 1, 1, 1, 1, 1, 1]),
     Object.freeze([1, 1, 1, 1, 1, 1, 1]),
@@ -111,7 +130,17 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 4,
-        name: "Brick Storm"
+        name: "Item Rain",
+
+        brickLayout: DEFAULT_BRICK_LAYOUT,
+
+        itemDropRate: 0.35,
+
+        itemTypes: Object.freeze([
+            ITEM_TYPES.EXTRA_LIFE,
+            ITEM_TYPES.EXPAND_PADDLE,
+            ITEM_TYPES.SLOW_BALL
+        ])
     }),
 
     Object.freeze({
@@ -154,6 +183,7 @@ let currentLevelIndex = 0;
 let bricks = [];
 let brickFormationOffsetX = 0;
 let brickFormationDirection = 1;
+let items = [];
 
 window.addEventListener("keydown", (event) => {
     if (
@@ -521,9 +551,79 @@ function getCurrentBrickLayout() {
 
     return currentLevel.brickLayout;
 }
+
+function getRandomItemType(itemTypes) {
+    const randomIndex =
+        Math.floor(
+            Math.random() * itemTypes.length
+        );
+
+    return itemTypes[randomIndex];
+}
+
+function tryDropItem(brick) {
+    const currentLevel = getCurrentLevel();
+
+    const dropRate =
+        currentLevel.itemDropRate;
+
+    if (
+        typeof dropRate !== "number" ||
+        dropRate <= 0
+    ) {
+        return;
+    }
+
+    const itemTypes =
+        currentLevel.itemTypes;
+
+    if (
+        !Array.isArray(itemTypes) ||
+        itemTypes.length === 0
+    ) {
+        return;
+    }
+
+    const clampedDropRate =
+        Math.max(
+            0,
+            Math.min(1, dropRate)
+        );
+
+    if (Math.random() >= clampedDropRate) {
+        return;
+    }
+
+    const type =
+        getRandomItemType(itemTypes);
+
+    items.push({
+        type,
+
+        x:
+            brick.x +
+            brick.width / 2 -
+            ITEM_CONFIG.width / 2,
+
+        y:
+            brick.y +
+            brick.height / 2 -
+            ITEM_CONFIG.height / 2,
+
+        width: ITEM_CONFIG.width,
+        height: ITEM_CONFIG.height,
+
+        fallSpeed: ITEM_CONFIG.fallSpeed
+    });
+}
+
 function resetBricks() {
     resetBrickFormationMovement();
     bricks = createBrickLayout();
+}
+
+function resetItems() {
+    items = [];
 }
 
 function resetPaddle(){
@@ -558,6 +658,7 @@ function resetLevelState(){
     resetPaddle();
     resetBall();
     resetBricks();
+    resetItems();
 }
 
 function restartGame(){
@@ -708,7 +809,12 @@ function handleBrickCollisions(
             continue;
         }
 
-        damageBrick(brick);
+        const wasDestroyed =
+            damageBrick(brick);
+
+        if (wasDestroyed) {
+            tryDropItem(brick);
+        }
 
         resolveBrickCollision(
             brick,
@@ -741,6 +847,17 @@ function resetBrickFormationMovement() {
 
 function getCurrentLevel(){
     return LEVELS[currentLevelIndex];
+}
+
+function updateItems(deltaTime) {
+    for (const item of items) {
+        item.y +=
+            item.fallSpeed * deltaTime;
+    }
+
+    items = items.filter(
+        item => item.y <= canvas.height
+    );
 }
 
 function updateBrickFormation(deltaTime) {
@@ -856,6 +973,7 @@ function update(deltaTime) {
     updatePaddle(deltaTime);
     updateBrickFormation(deltaTime);
     updateBall(deltaTime);
+    updateItems(deltaTime);
 
     checkLevelCompletion();
 }
@@ -1034,6 +1152,41 @@ function drawBricks() {
     ctx.globalAlpha = 1;
 }
 
+function drawItems() {
+    for (const item of items) {
+        ctx.fillStyle = "#111111";
+        ctx.fillRect(
+            item.x,
+            item.y,
+            item.width,
+            item.height
+        );
+
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
+            item.x,
+            item.y,
+            item.width,
+            item.height
+        );
+
+        ctx.fillStyle = "white";
+        ctx.font = "13px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        ctx.fillText(
+            ITEM_LABELS[item.type] || "?",
+            item.x + item.width / 2,
+            item.y + item.height / 2
+        );
+    }
+
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+}
+
 function drawLevelComplete() {
     if (gameState !== GAME_STATES.LEVEL_COMPLETE) {
         return;
@@ -1131,6 +1284,7 @@ function draw() {
     drawBricks();
 
     if (gameState === GAME_STATES.PLAYING) {
+        drawItems();
         drawPaddle();
         drawBall();
     }
