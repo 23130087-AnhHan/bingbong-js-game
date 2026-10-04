@@ -1,8 +1,18 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx= canvas.getContext('2d');
 
+
 const INITIAL_LIVES = 3;
 const POINTS_PER_BRICK_HIT = 10;
+
+const MAX_LIVES = 5;
+
+const PADDLE_BASE_WIDTH = 120;
+const PADDLE_EXPAND_AMOUNT = 40;
+const PADDLE_MAX_WIDTH = 200;
+
+const SLOW_BALL_MULTIPLIER = 0.75;
+const MIN_BALL_SPEED = 220;
 
 const BRICK_STYLES = Object.freeze({
     1: "#ffffff",
@@ -20,12 +30,15 @@ const BRICK_CONFIG = Object.freeze({
     topOffset: 100
 });
 
-const paddle= {
-    width: 120,
+const paddle = {
+    width: PADDLE_BASE_WIDTH,
     height: 18,
+
     x: 0,
-    y: canvas.height -40,
+    y: canvas.height - 40,
+
     speed: 420,
+
     moveLeft: false,
     moveRight: false
 };
@@ -364,6 +377,110 @@ canvas.addEventListener("click", (event) => {
     startLevel(clickedCard.levelIndex);
 });
 
+function isItemCollidingWithPaddle(item) {
+    const itemLeft = item.x;
+    const itemRight =
+        item.x + item.width;
+
+    const itemTop = item.y;
+    const itemBottom =
+        item.y + item.height;
+
+    const paddleLeft = paddle.x;
+    const paddleRight =
+        paddle.x + paddle.width;
+
+    const paddleTop = paddle.y;
+    const paddleBottom =
+        paddle.y + paddle.height;
+
+    return (
+        itemRight >= paddleLeft &&
+        itemLeft <= paddleRight &&
+        itemBottom >= paddleTop &&
+        itemTop <= paddleBottom
+    );
+}
+
+function applyExtraLifeEffect() {
+    lives = Math.min(
+        lives + 1,
+        MAX_LIVES
+    );
+}
+
+function applyExpandPaddleEffect() {
+    const paddleCenter =
+        paddle.x + paddle.width / 2;
+
+    paddle.width =
+        Math.min(
+            paddle.width +
+            PADDLE_EXPAND_AMOUNT,
+            PADDLE_MAX_WIDTH
+        );
+
+    paddle.x =
+        paddleCenter -
+        paddle.width / 2;
+
+    clampPaddleToCanvas();
+}
+
+function setBallSpeed(targetSpeed) {
+    const currentSpeed =
+        Math.hypot(
+            ball.velocityX,
+            ball.velocityY
+        );
+
+    if (currentSpeed === 0) {
+        return;
+    }
+
+    const scale =
+        targetSpeed / currentSpeed;
+
+    ball.velocityX *= scale;
+    ball.velocityY *= scale;
+}
+
+function applySlowBallEffect() {
+    const currentSpeed =
+        Math.hypot(
+            ball.velocityX,
+            ball.velocityY
+        );
+
+    const slowedSpeed =
+        Math.max(
+            MIN_BALL_SPEED,
+            currentSpeed *
+            SLOW_BALL_MULTIPLIER
+        );
+
+    setBallSpeed(slowedSpeed);
+}
+
+function applyItemEffect(type) {
+    switch (type) {
+        case ITEM_TYPES.EXTRA_LIFE:
+            applyExtraLifeEffect();
+            break;
+
+        case ITEM_TYPES.EXPAND_PADDLE:
+            applyExpandPaddleEffect();
+            break;
+
+        case ITEM_TYPES.SLOW_BALL:
+            applySlowBallEffect();
+            break;
+
+        default:
+            break;
+    }
+}
+
 
 function handleWallCollision(){
     if(ball.x -ball.radius <=0){
@@ -626,8 +743,12 @@ function resetItems() {
     items = [];
 }
 
-function resetPaddle(){
-    paddle.x = (canvas.width - paddle.width) / 2;
+function resetPaddle() {
+    paddle.width =
+        PADDLE_BASE_WIDTH;
+
+    paddle.x =
+        (canvas.width - paddle.width) / 2;
 
     paddle.moveLeft = false;
     paddle.moveRight = false;
@@ -850,14 +971,27 @@ function getCurrentLevel(){
 }
 
 function updateItems(deltaTime) {
+    const remainingItems = [];
+
     for (const item of items) {
         item.y +=
             item.fallSpeed * deltaTime;
+
+        if (
+            isItemCollidingWithPaddle(item)
+        ) {
+            applyItemEffect(item.type);
+            continue;
+        }
+
+        if (item.y > canvas.height) {
+            continue;
+        }
+
+        remainingItems.push(item);
     }
 
-    items = items.filter(
-        item => item.y <= canvas.height
-    );
+    items = remainingItems;
 }
 
 function updateBrickFormation(deltaTime) {
@@ -927,19 +1061,32 @@ function advanceToNextLevel() {
     startLevel(nextLevelIndex);
 }
 
-function updatePaddle(deltaTime){
-    if(paddle.moveLeft){
-        paddle.x -= paddle.speed*deltaTime;
+function clampPaddleToCanvas() {
+    if (paddle.x < 0) {
+        paddle.x = 0;
     }
-    if(paddle.moveRight){
-        paddle.x += paddle.speed*deltaTime;
+
+    if (
+        paddle.x + paddle.width >
+        canvas.width
+    ) {
+        paddle.x =
+            canvas.width - paddle.width;
     }
-    if(paddle.x < 0){
-        paddle.x =0;
+}
+
+function updatePaddle(deltaTime) {
+    if (paddle.moveLeft) {
+        paddle.x -=
+            paddle.speed * deltaTime;
     }
-    if(paddle.x + paddle.width > canvas.width){
-        paddle.x= canvas.width - paddle.width;
+
+    if (paddle.moveRight) {
+        paddle.x +=
+            paddle.speed * deltaTime;
     }
+
+    clampPaddleToCanvas();
 }
 
 function updateBall(deltaTime) {
