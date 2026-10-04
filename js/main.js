@@ -96,6 +96,9 @@ const ITEM_CONFIG = Object.freeze({
     fallSpeed: 140
 });
 
+const MULTIBALL_SPREAD_ANGLE =
+    Math.PI / 4;
+
 
 const DEFAULT_BRICK_LAYOUT = Object.freeze([
     Object.freeze([1, 1, 1, 1, 1, 1, 1]),
@@ -181,7 +184,17 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 6,
-        name: "Multiball Chaos"
+        name: "Multiball Chaos",
+
+        brickLayout: Object.freeze([
+            Object.freeze([0, 1, 1, 2, 1, 1, 0]),
+            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
+            Object.freeze([1, 2, 1, 3, 1, 2, 1]),
+            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
+            Object.freeze([0, 1, 1, 2, 1, 1, 0])
+        ]),
+
+        initialBallCount: 3
     }),
 
     Object.freeze({
@@ -522,6 +535,98 @@ function applyItemEffect(type) {
     }
 }
 
+function getInitialBallCount() {
+    const currentLevel =
+        getCurrentLevel();
+
+    const configuredCount =
+        currentLevel.initialBallCount;
+
+    if (
+        !Number.isInteger(configuredCount) ||
+        configuredCount < 1
+    ) {
+        return 1;
+    }
+
+    return configuredCount;
+}
+
+function createSingleInitialBall() {
+    const horizontalDirection =
+        Math.random() < 0.5 ? -1 : 1;
+
+    return createBall(
+        paddle.x + paddle.width / 2,
+        paddle.y - BALL_RADIUS - 2,
+
+        BALL_INITIAL_VELOCITY_X *
+        horizontalDirection,
+
+        BALL_INITIAL_VELOCITY_Y
+    );
+}
+
+function createMultiballSet(ballCount) {
+    const createdBalls = [];
+
+    const spawnX =
+        paddle.x + paddle.width / 2;
+
+    const spawnY =
+        paddle.y - BALL_RADIUS - 2;
+
+    const initialSpeed =
+        Math.hypot(
+            BALL_INITIAL_VELOCITY_X,
+            BALL_INITIAL_VELOCITY_Y
+        );
+
+    for (
+        let index = 0;
+        index < ballCount;
+        index++
+    ) {
+        const progress =
+            ballCount === 1
+                ? 0.5
+                : index / (ballCount - 1);
+
+        let angle =
+            -MULTIBALL_SPREAD_ANGLE +
+            progress *
+            (
+                MULTIBALL_SPREAD_ANGLE * 2
+            );
+
+        if (
+            Math.abs(angle) <
+            MIN_BOUNCE_ANGLE
+        ) {
+            angle = MIN_BOUNCE_ANGLE;
+        }
+
+        const velocityX =
+            initialSpeed *
+            Math.sin(angle);
+
+        const velocityY =
+            -initialSpeed *
+            Math.cos(angle);
+
+        createdBalls.push(
+            createBall(
+                spawnX,
+                spawnY,
+                velocityX,
+                velocityY
+            )
+        );
+    }
+
+    return createdBalls;
+}
+
 
 function handleWallCollision(ball) {
     if (ball.x - ball.radius <= 0) {
@@ -831,20 +936,21 @@ function resetPaddle() {
 }
 
 function resetBalls() {
-    const horizontalDirection =
-        Math.random() < 0.5 ? -1 : 1;
+    const initialBallCount =
+        getInitialBallCount();
 
-    const ball = createBall(
-        paddle.x + paddle.width / 2,
-        paddle.y - BALL_RADIUS - 2,
+    if (initialBallCount === 1) {
+        balls = [
+            createSingleInitialBall()
+        ];
 
-        BALL_INITIAL_VELOCITY_X *
-        horizontalDirection,
+        return;
+    }
 
-        BALL_INITIAL_VELOCITY_Y
-    );
-
-    balls = [ball];
+    balls =
+        createMultiballSet(
+            initialBallCount
+        );
 }
 
 function resetLevelState() {
@@ -1469,6 +1575,14 @@ function drawHud() {
     ctx.fillText(
         `Bricks: ${remainingBricks}/${bricks.length}`,
         canvas.width / 2,
+        55
+    );
+
+    ctx.textAlign = "right";
+
+    ctx.fillText(
+        `Balls: ${balls.length}`,
+        canvas.width - 20,
         55
     );
 
