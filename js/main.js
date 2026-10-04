@@ -20,6 +20,14 @@ const BRICK_STYLES = Object.freeze({
     3: "#8a8a8a"
 });
 
+const BRICK_TYPES = Object.freeze({
+    NORMAL: "normal",
+    EXPLOSIVE: "explosive"
+});
+
+const EXPLOSION_RADIUS = 95;
+const EXPLOSIVE_BRICK_COLOR = "#ff8c42";
+
 const BRICK_CONFIG = Object.freeze({
     width: 72,
     height: 24,
@@ -158,7 +166,23 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 5,
-        name: "Survival"
+        name: "Explosive Chain",
+
+        brickLayout: Object.freeze([
+            Object.freeze([1, 1, 1, 1, 1, 1, 1]),
+            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
+            Object.freeze([1, 2, 1, 1, 1, 2, 1]),
+            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
+            Object.freeze([1, 1, 1, 1, 1, 1, 1])
+        ]),
+
+        explosiveCells: Object.freeze([
+            Object.freeze([1, 1]),
+            Object.freeze([1, 5]),
+            Object.freeze([2, 3]),
+            Object.freeze([3, 1]),
+            Object.freeze([3, 5])
+        ])
     }),
 
     Object.freeze({
@@ -571,6 +595,23 @@ function hasBallMissed(){
     return ball.y - ball.radius > canvas.height;
 }
 
+function isExplosiveBrickCell(row, column) {
+    const currentLevel = getCurrentLevel();
+
+    const explosiveCells =
+        currentLevel.explosiveCells;
+
+    if (!Array.isArray(explosiveCells)) {
+        return false;
+    }
+
+    return explosiveCells.some(
+        ([explosiveRow, explosiveColumn]) =>
+            explosiveRow === row &&
+            explosiveColumn === column
+    );
+}
+
 function createBrickLayout() {
     const createdBricks = [];
 
@@ -604,6 +645,11 @@ function createBrickLayout() {
                 continue;
             }
 
+            const type =
+                isExplosiveBrickCell(row, column)
+                    ? BRICK_TYPES.EXPLOSIVE
+                    : BRICK_TYPES.NORMAL;
+
             const x =
                 startX +
                 column *
@@ -628,6 +674,8 @@ function createBrickLayout() {
                 width: BRICK_CONFIG.width,
                 height: BRICK_CONFIG.height,
 
+                type,
+
                 hp,
                 maxHp: hp,
 
@@ -635,7 +683,6 @@ function createBrickLayout() {
             });
         }
     }
-
     return createdBricks;
 }
 
@@ -898,6 +945,13 @@ function damageBrick(brick) {
 }
 
 function getBrickColor(brick) {
+    if (
+        brick.type ===
+        BRICK_TYPES.EXPLOSIVE
+    ) {
+        return EXPLOSIVE_BRICK_COLOR;
+    }
+
     return (
         BRICK_STYLES[brick.maxHp] ||
         "#6f6f6f"
@@ -934,7 +988,7 @@ function handleBrickCollisions(
             damageBrick(brick);
 
         if (wasDestroyed) {
-            tryDropItem(brick);
+            handleBrickDestroyed(brick);
         }
 
         resolveBrickCollision(
@@ -944,6 +998,72 @@ function handleBrickCollisions(
         );
 
         break;
+    }
+}
+
+
+function handleBrickDestroyed(brick) {
+    tryDropItem(brick);
+
+    if (
+        brick.type ===
+        BRICK_TYPES.EXPLOSIVE
+    ) {
+        triggerBrickExplosion(brick);
+    }
+}
+
+function triggerBrickExplosion(sourceBrick) {
+    const sourceCenterX =
+        sourceBrick.x +
+        sourceBrick.width / 2;
+
+    const sourceCenterY =
+        sourceBrick.y +
+        sourceBrick.height / 2;
+
+    const explosionRadiusSquared =
+        EXPLOSION_RADIUS *
+        EXPLOSION_RADIUS;
+
+    for (const brick of bricks) {
+        if (brick.destroyed) {
+            continue;
+        }
+
+        const brickCenterX =
+            brick.x +
+            brick.width / 2;
+
+        const brickCenterY =
+            brick.y +
+            brick.height / 2;
+
+        const distanceX =
+            brickCenterX -
+            sourceCenterX;
+
+        const distanceY =
+            brickCenterY -
+            sourceCenterY;
+
+        const distanceSquared =
+            distanceX * distanceX +
+            distanceY * distanceY;
+
+        if (
+            distanceSquared >
+            explosionRadiusSquared
+        ) {
+            continue;
+        }
+
+        const wasDestroyed =
+            damageBrick(brick);
+
+        if (wasDestroyed) {
+            handleBrickDestroyed(brick);
+        }
     }
 }
 
