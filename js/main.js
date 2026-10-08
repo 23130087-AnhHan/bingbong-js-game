@@ -22,11 +22,13 @@ const BRICK_STYLES = Object.freeze({
 
 const BRICK_TYPES = Object.freeze({
     NORMAL: "normal",
-    EXPLOSIVE: "explosive"
+    EXPLOSIVE: "explosive",
+    STEEL: "steel"
 });
 
 const EXPLOSION_RADIUS = 95;
 const EXPLOSIVE_BRICK_COLOR = "#ff8c42";
+const STEEL_BRICK_COLOR = "#5f6f7a";
 
 const BRICK_CONFIG = Object.freeze({
     width: 72,
@@ -199,7 +201,36 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 7,
-        name: "Portal Maze"
+        name: "Steel Fortress",
+
+        brickLayout: Object.freeze([
+            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
+            Object.freeze([1, 2, 1, 2, 1, 2, 1]),
+            Object.freeze([1, 1, 2, 3, 2, 1, 1]),
+            Object.freeze([1, 2, 1, 2, 1, 2, 1]),
+            Object.freeze([1, 1, 2, 2, 2, 1, 1])
+        ]),
+
+        steelCells: Object.freeze([
+            Object.freeze([0, 0]),
+            Object.freeze([0, 6]),
+
+            Object.freeze([1, 0]),
+            Object.freeze([1, 2]),
+            Object.freeze([1, 4]),
+            Object.freeze([1, 6]),
+
+            Object.freeze([2, 0]),
+            Object.freeze([2, 6]),
+
+            Object.freeze([3, 0]),
+            Object.freeze([3, 2]),
+            Object.freeze([3, 4]),
+            Object.freeze([3, 6]),
+
+            Object.freeze([4, 0]),
+            Object.freeze([4, 6])
+        ])
     }),
 
     Object.freeze({
@@ -729,20 +760,26 @@ function hasBallMissed(ball) {
     );
 }
 
-function isExplosiveBrickCell(row, column) {
-    const currentLevel = getCurrentLevel();
-
-    const explosiveCells =
-        currentLevel.explosiveCells;
-
-    if (!Array.isArray(explosiveCells)) {
+function isConfiguredBrickCell(
+    cells,
+    row,
+    column
+) {
+    if (!Array.isArray(cells)) {
         return false;
     }
 
-    return explosiveCells.some(
-        ([explosiveRow, explosiveColumn]) =>
-            explosiveRow === row &&
-            explosiveColumn === column
+    return cells.some(
+        ([configuredRow, configuredColumn]) =>
+            configuredRow === row &&
+            configuredColumn === column
+    );
+}
+
+function isBreakableBrick(brick) {
+    return (
+        brick.type !==
+        BRICK_TYPES.STEEL
     );
 }
 
@@ -780,9 +817,10 @@ function createBrickLayout() {
             }
 
             const type =
-                isExplosiveBrickCell(row, column)
-                    ? BRICK_TYPES.EXPLOSIVE
-                    : BRICK_TYPES.NORMAL;
+                getBrickTypeForCell(
+                    row,
+                    column
+                );
 
             const x =
                 startX +
@@ -820,18 +858,31 @@ function createBrickLayout() {
     return createdBricks;
 }
 
-function getRemainingBrickCount() {
+function getRemainingBreakableBrickCount() {
     return bricks.filter(
-        brick => !brick.destroyed
+        brick =>
+            isBreakableBrick(brick) &&
+            !brick.destroyed
     ).length;
 }
 
-function areAllBricksDestroyed() {
-    if (bricks.length === 0) {
+function getTotalBreakableBrickCount() {
+    return bricks.filter(
+        isBreakableBrick
+    ).length;
+}
+
+function areAllBreakableBricksDestroyed() {
+    const breakableBricks =
+        bricks.filter(
+            isBreakableBrick
+        );
+
+    if (breakableBricks.length === 0) {
         return false;
     }
 
-    return bricks.every(
+    return breakableBricks.every(
         brick => brick.destroyed
     );
 }
@@ -848,6 +899,36 @@ function getCurrentBrickLayout() {
     }
 
     return currentLevel.brickLayout;
+}
+
+function getBrickTypeForCell(
+    row,
+    column
+) {
+    const currentLevel =
+        getCurrentLevel();
+
+    if (
+        isConfiguredBrickCell(
+            currentLevel.steelCells,
+            row,
+            column
+        )
+    ) {
+        return BRICK_TYPES.STEEL;
+    }
+
+    if (
+        isConfiguredBrickCell(
+            currentLevel.explosiveCells,
+            row,
+            column
+        )
+    ) {
+        return BRICK_TYPES.EXPLOSIVE;
+    }
+
+    return BRICK_TYPES.NORMAL;
 }
 
 function getRandomItemType(itemTypes) {
@@ -1080,13 +1161,17 @@ function resolveBrickCollision(
 }
 
 function damageBrick(brick) {
-    if (brick.destroyed) {
+    if (
+        brick.destroyed ||
+        !isBreakableBrick(brick)
+    ) {
         return false;
     }
 
     brick.hp--;
 
-    score += POINTS_PER_BRICK_HIT;
+    score +=
+        POINTS_PER_BRICK_HIT;
 
     if (brick.hp <= 0) {
         brick.hp = 0;
@@ -1101,6 +1186,13 @@ function damageBrick(brick) {
 function getBrickColor(brick) {
     if (
         brick.type ===
+        BRICK_TYPES.STEEL
+    ) {
+        return STEEL_BRICK_COLOR;
+    }
+
+    if (
+        brick.type ===
         BRICK_TYPES.EXPLOSIVE
     ) {
         return EXPLOSIVE_BRICK_COLOR;
@@ -1113,6 +1205,10 @@ function getBrickColor(brick) {
 }
 
 function getBrickDamageAlpha(brick) {
+    if (!isBreakableBrick(brick)) {
+        return 1;
+    }
+
     if (brick.maxHp <= 1) {
         return 1;
     }
@@ -1120,7 +1216,10 @@ function getBrickDamageAlpha(brick) {
     const healthRatio =
         brick.hp / brick.maxHp;
 
-    return 0.55 + healthRatio * 0.45;
+    return (
+        0.55 +
+        healthRatio * 0.45
+    );
 }
 
 function handleBrickCollisions(
@@ -1339,8 +1438,11 @@ function checkLevelCompletion() {
         return;
     }
 
-    if (areAllBricksDestroyed()) {
-        gameState = GAME_STATES.LEVEL_COMPLETE;
+    if (
+        areAllBreakableBricksDestroyed()
+    ) {
+        gameState =
+            GAME_STATES.LEVEL_COMPLETE;
     }
 }
 
@@ -1535,8 +1637,11 @@ function drawBalls() {
 
 function drawHud() {
     const currentLevel = getCurrentLevel();
-    const remainingBricks =
-        getRemainingBrickCount();
+    const remainingBreakableBricks =
+        getRemainingBreakableBrickCount();
+
+    const totalBreakableBricks =
+        getTotalBreakableBrickCount();
 
     ctx.fillStyle = "white";
     ctx.font = "20px Arial";
@@ -1573,7 +1678,7 @@ function drawHud() {
 
     ctx.textAlign = "center";
     ctx.fillText(
-        `Bricks: ${remainingBricks}/${bricks.length}`,
+        `Breakable: ${remainingBreakableBricks}/${totalBreakableBricks}`,
         canvas.width / 2,
         55
     );
