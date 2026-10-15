@@ -28,6 +28,8 @@
             Click a level or use arrow keys and <kbd>Enter</kbd>.<br>
             Shortcuts: <kbd>1</kbd>&ndash;<kbd>9</kbd>, <kbd>0</kbd> for Level 10.
             Press <kbd>M</kbd> during gameplay to return here.
+            <br>After choosing a level, click the playfield or press <kbd>Space</kbd> to launch.
+            <kbd>P</kbd> pauses; <kbd>C</kbd> continues.
         </p>
     </section>
 
@@ -55,17 +57,33 @@
         </div>
     </section>
 
-    <canvas
-            id="gameCanvas"
-            width="800"
-            height="600"
-            tabindex="-1"
-            aria-label="BingBong playfield"
-            hidden>
-    </canvas>
+    <div id="gameBoard" class="game-board" hidden>
+        <canvas
+                id="gameCanvas"
+                width="800"
+                height="600"
+                tabindex="-1"
+                aria-label="BingBong playfield">
+        </canvas>
+
+        <div id="readyMessage" class="game-message" role="status" hidden>
+            <h2>Ready to launch?</h2>
+            <p>Click inside the playfield or press <kbd>Space</kbd> to launch.</p>
+            <p class="game-message-hint">You can move the paddle before launching.</p>
+        </div>
+
+        <div id="pausedMessage" class="game-message game-message-paused" role="status" hidden>
+            <h2>Paused</h2>
+            <p>Press <kbd>C</kbd> to continue.</p>
+            <p class="game-message-hint">Press <kbd>M</kbd> to return to level select.</p>
+        </div>
+    </div>
 
     <p id="gameControls" class="game-controls" hidden>
         <span>Move: mouse, <kbd>A</kbd> / <kbd>D</kbd> or <kbd>&larr;</kbd> / <kbd>&rarr;</kbd></span>
+        <span>Click / <kbd>Space</kbd> Launch</span>
+        <span><kbd>P</kbd> Pause</span>
+        <span><kbd>C</kbd> Continue</span>
         <span><kbd>M</kbd> Level select</span>
     </p>
 </main>

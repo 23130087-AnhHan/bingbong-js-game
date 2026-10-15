@@ -200,6 +200,10 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
+.game-board {
+    position: relative;
+}
+
 #gameCanvas {
     display: block;
 
@@ -208,6 +212,38 @@ body {
 
     background: #000;
     border: 2px solid white;
+}
+
+.game-message {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+}
+
+.game-message-paused {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.game-message h2 {
+    margin: 0 0 12px;
+    font-size: clamp(22px, 4vw, 32px);
+}
+
+.game-message p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.game-message .game-message-hint {
+    margin-top: 8px;
+    color: #bbb;
+    font-size: 12px;
 }
 
 .game-controls {

@@ -2,6 +2,12 @@ const canvas = document.getElementById('gameCanvas');
 const ctx= canvas.getContext('2d');
 const gameContainer = document.querySelector(".game-container");
 
+const gameView = {
+    board: document.getElementById("gameBoard"),
+    readyMessage: document.getElementById("readyMessage"),
+    pausedMessage: document.getElementById("pausedMessage")
+};
+
 const levelMenu = {
     container: document.getElementById("levelMenu"),
     grid: document.getElementById("levelGrid"),
@@ -83,7 +89,9 @@ const MAX_BOUNCE_ANGLE = Math.PI / 3;
 
 const GAME_STATES = Object.freeze({
     LEVEL_SELECT: "levelSelect",
+    READY: "ready",
     PLAYING: "playing",
+    PAUSED: "paused",
     LEVEL_COMPLETE: "levelComplete",
     GAME_OVER: "gameOver"
 });
@@ -275,6 +283,7 @@ let lastTime=0;
 let lives=INITIAL_LIVES;
 let score=0;
 let gameState = GAME_STATES.LEVEL_SELECT;
+let stateBeforePause = GAME_STATES.PLAYING;
 let currentLevelIndex = 0;
 let selectedLevelIndex = 0;
 let bricks = [];
@@ -311,7 +320,30 @@ window.addEventListener("keydown", (event) => {
         return;
     }
 
-    if (gameState !== GAME_STATES.PLAYING) {
+    if (event.code === "Space") {
+        event.preventDefault();
+
+        if (!event.repeat) {
+            launchBalls();
+        }
+
+        return;
+    }
+
+    if (event.key.toLowerCase() === "p") {
+        pauseGame();
+        return;
+    }
+
+    if (event.key.toLowerCase() === "c") {
+        continueGame();
+        return;
+    }
+
+    if (
+        gameState !== GAME_STATES.PLAYING &&
+        gameState !== GAME_STATES.READY
+    ) {
         return;
     }
 
@@ -346,7 +378,7 @@ window.addEventListener("keyup", (event) => {
 
 canvas.addEventListener("mousemove", (event) => {
     if (
-        gameState !== GAME_STATES.PLAYING ||
+        (gameState !== GAME_STATES.PLAYING && gameState !== GAME_STATES.READY) ||
         paddle.moveLeft ||
         paddle.moveRight
     ) {
@@ -363,6 +395,10 @@ canvas.addEventListener("mousemove", (event) => {
 
 canvas.addEventListener("mouseleave", () => {
     paddle.mouseTargetX = null;
+});
+
+canvas.addEventListener("click", () => {
+    launchBalls();
 });
 
 window.addEventListener("blur", resetPaddleInput);
@@ -497,9 +533,56 @@ function startLevel(levelIndex) {
 
     resetLevelState();
 
-    gameState = GAME_STATES.PLAYING;
-    updateHud();
+    prepareBallLaunch();
     canvas.focus({ preventScroll: true });
+}
+
+function attachBallsToPaddle() {
+    for (const ball of balls) {
+        ball.x = paddle.x + paddle.width / 2;
+        ball.y = paddle.y - ball.radius - 2;
+    }
+}
+
+function prepareBallLaunch() {
+    resetPaddleInput();
+    attachBallsToPaddle();
+    gameState = GAME_STATES.READY;
+    updateHud();
+}
+
+function launchBalls() {
+    if (gameState !== GAME_STATES.READY) {
+        return;
+    }
+
+    gameState = GAME_STATES.PLAYING;
+    lastTime = 0;
+    updateHud();
+}
+
+function pauseGame() {
+    if (
+        gameState !== GAME_STATES.PLAYING &&
+        gameState !== GAME_STATES.READY
+    ) {
+        return;
+    }
+
+    stateBeforePause = gameState;
+    resetPaddleInput();
+    gameState = GAME_STATES.PAUSED;
+    updateHud();
+}
+
+function continueGame() {
+    if (gameState !== GAME_STATES.PAUSED) {
+        return;
+    }
+
+    gameState = stateBeforePause;
+    lastTime = 0;
+    updateHud();
 }
 
 function openLevelSelectMenu() {
@@ -1098,8 +1181,7 @@ function resetLevelState() {
 }
 
 function restartGame(){
-    resetLevelState();
-    gameState= GAME_STATES.PLAYING;
+    startLevel(currentLevelIndex);
 }
 
 function handleAllBallsMissed() {
@@ -1114,6 +1196,7 @@ function handleAllBallsMissed() {
     }
 
     resetBalls();
+    prepareBallLaunch();
 }
 
 function isBallCollidingWithBrick(
@@ -1573,6 +1656,12 @@ function updateBall(ball, deltaTime) {
 }
 
 function update(deltaTime) {
+    if (gameState === GAME_STATES.READY) {
+        updatePaddle(deltaTime);
+        attachBallsToPaddle();
+        return;
+    }
+
     if (gameState !== GAME_STATES.PLAYING) {
         return;
     }
@@ -1580,6 +1669,11 @@ function update(deltaTime) {
     updatePaddle(deltaTime);
     updateBrickFormation(deltaTime);
     updateBalls(deltaTime);
+
+    if (gameState !== GAME_STATES.PLAYING) {
+        return;
+    }
+
     updateItems(deltaTime);
 
     checkLevelCompletion();
@@ -1634,7 +1728,9 @@ function updateHud() {
     hud.container.hidden = isLevelSelect;
     hud.controls.hidden = isLevelSelect;
     levelMenu.container.hidden = !isLevelSelect;
-    canvas.hidden = isLevelSelect;
+    gameView.board.hidden = isLevelSelect;
+    gameView.readyMessage.hidden = gameState !== GAME_STATES.READY;
+    gameView.pausedMessage.hidden = gameState !== GAME_STATES.PAUSED;
 
     if (isLevelSelect) {
         return;
@@ -1827,7 +1923,11 @@ function draw() {
 
     drawBricks();
 
-    if (gameState === GAME_STATES.PLAYING) {
+    if (
+        gameState === GAME_STATES.PLAYING ||
+        gameState === GAME_STATES.READY ||
+        gameState === GAME_STATES.PAUSED
+    ) {
         drawItems();
         drawPaddle();
         drawBalls();
