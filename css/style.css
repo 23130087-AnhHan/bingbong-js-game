@@ -1,10 +1,11 @@
-*{
+* {
     box-sizing: border-box;
 }
 
 body {
     margin: 0;
     min-height: 100vh;
+    padding: 8px 16px;
 
     display: flex;
     justify-content: center;
@@ -15,21 +16,317 @@ body {
     color: white;
 }
 
-.game-container{
+.game-container {
+    width: 800px;
+    max-width: 100%;
     text-align: center;
 }
 
 .game-container h1 {
-    margin-bottom: 20px;
+    margin: 0 0 8px;
+    font-size: 24px;
+    line-height: 1.2;
 }
 
-#gameCanvas{
+.level-menu {
+    padding: 28px 24px;
+    border: 1px solid #444;
+    background: #080808;
+}
+
+.level-menu h2 {
+    margin: 0 0 8px;
+    font-size: 30px;
+}
+
+.level-menu-intro {
+    margin: 0;
+    color: #aaa;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    margin: 24px 0 20px;
+}
+
+.level-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 104px;
+    padding: 14px 10px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: #191919;
+    color: #eee;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.level-card-number {
+    color: #aaa;
+    font-size: 12px;
+}
+
+.level-card-name {
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.level-card-status {
+    margin-top: auto;
+    padding: 3px 5px;
+    border-radius: 3px;
+    background: #302919;
+    color: #e9c26c;
+    font-size: 10px;
+    line-height: 1.4;
+}
+
+.level-card-in-development {
+    background: #131313;
+    color: #bbb;
+}
+
+.level-card.is-selected {
+    border-color: #7dd3fc;
+    background: #17252d;
+}
+
+.level-card:focus-visible {
+    outline: 2px solid #7dd3fc;
+    outline-offset: 3px;
+}
+
+.level-details {
+    min-height: 96px;
+    padding: 12px 14px;
+    border-left: 2px solid #7dd3fc;
+    background: #151a1c;
+    text-align: left;
+}
+
+.level-details strong {
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.level-details p {
+    margin: 6px 0 0;
+    color: #bbb;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.level-menu-help {
+    margin: 20px 0 0;
+    color: #aaa;
+    font-size: 12px;
+    line-height: 2;
+}
+
+.game-hud {
+    padding: 8px 14px;
+    background: #191919;
+    border: 1px solid #444;
+    border-bottom: 0;
+}
+
+.game-hud-primary {
+    display: grid;
+    grid-template-columns: 1fr 3fr 1fr;
+    align-items: center;
+    gap: 10px;
+}
+
+.game-stat,
+.game-level {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.game-stat {
+    text-align: left;
+}
+
+.game-stat-score {
+    justify-content: flex-end;
+    text-align: right;
+}
+
+.game-level {
+    justify-content: center;
+}
+
+.game-stat-label {
+    color: #aaa;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.game-stat-value {
+    font-size: 22px;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+}
+
+.game-level-name {
+    font-size: 16px;
+}
+
+.game-hud-secondary {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid #333;
+    color: #aaa;
+    font-size: 13px;
+    line-height: 1.2;
+}
+
+.game-hud-secondary strong {
+    color: #eee;
+    font-variant-numeric: tabular-nums;
+}
+
+#gameCanvas {
     display: block;
 
-    width: 800px;
-    height: 600px;
+    width: 100%;
+    height: auto;
 
     background: #000;
     border: 2px solid white;
+}
+
+.game-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 20px;
+    margin: 8px 0 0;
+    color: #aaa;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+kbd {
+    display: inline-block;
+    min-width: 24px;
+    padding: 1px 5px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background: #222;
+    color: #eee;
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#gameCanvas[hidden],
+[hidden] {
+    display: none;
+}
+
+@media (max-width: 680px) {
+    .level-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 420px) {
+    .level-menu {
+        padding: 20px 14px;
+    }
+
+    .level-menu h2 {
+        font-size: 26px;
+    }
+
+    .level-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 20px;
+    }
+}
+
+@media (max-width: 520px) {
+    .game-hud {
+        padding: 8px 10px;
+    }
+
+    .game-hud-primary {
+        grid-template-columns: 1fr 2fr 1fr;
+        gap: 8px;
+    }
+
+    .game-stat,
+    .game-level {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .game-stat {
+        align-items: flex-start;
+    }
+
+    .game-stat-score {
+        align-items: flex-end;
+    }
+
+    .game-stat-label {
+        font-size: 10px;
+    }
+
+    .game-stat-value {
+        font-size: 20px;
+    }
+
+    .game-level-name {
+        font-size: 14px;
+    }
+}
+
+@media (max-height: 600px) {
+    body {
+        padding: 6px 16px;
+    }
+
+    .game-container h1 {
+        margin-bottom: 6px;
+        font-size: 20px;
+    }
+
+    .game-hud {
+        padding: 6px 10px;
+    }
+
+    .game-hud-secondary {
+        margin-top: 4px;
+        padding-top: 4px;
+    }
+
+    .game-controls {
+        margin-top: 6px;
+        gap: 4px 12px;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    kbd {
+        min-width: 20px;
+        font-size: 11px;
+    }
 }
 

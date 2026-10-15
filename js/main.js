@@ -1,5 +1,24 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx= canvas.getContext('2d');
+const gameContainer = document.querySelector(".game-container");
+
+const levelMenu = {
+    container: document.getElementById("levelMenu"),
+    grid: document.getElementById("levelGrid"),
+    title: document.getElementById("levelDetailsTitle"),
+    description: document.getElementById("levelDescription")
+};
+
+const hud = {
+    container: document.getElementById("gameHud"),
+    lives: document.getElementById("hudLives"),
+    score: document.getElementById("hudScore"),
+    levelNumber: document.getElementById("hudLevelNumber"),
+    levelName: document.getElementById("hudLevelName"),
+    bricks: document.getElementById("hudBricks"),
+    balls: document.getElementById("hudBalls"),
+    controls: document.getElementById("gameControls")
+};
 
 
 const INITIAL_LIVES = 3;
@@ -68,18 +87,6 @@ const GAME_STATES = Object.freeze({
     GAME_OVER: "gameOver"
 });
 
-const LEVEL_MENU_CONFIG = Object.freeze({
-    columns: 5,
-
-    cardWidth: 130,
-    cardHeight: 70,
-
-    gapX: 15,
-    gapY: 20,
-
-    startY: 180
-});
-
 const ITEM_TYPES = Object.freeze({
     EXTRA_LIFE: "extraLife",
     EXPAND_PADDLE: "expandPaddle",
@@ -114,12 +121,14 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 1,
         name: "Classic Breakout",
+        description: "Learn the basics: keep the ball in play and break every brick.",
         brickLayout: DEFAULT_BRICK_LAYOUT
     }),
 
     Object.freeze({
         id: 2,
         name: "Hard Shell",
+        description: "Tougher bricks need multiple hits. Keep going until every brick is destroyed.",
 
         brickLayout: Object.freeze([
             Object.freeze([2, 2, 2, 2, 2, 2, 2]),
@@ -133,6 +142,7 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 3,
         name: "Moving Formation",
+        description: "The brick formation moves from side to side. Follow the gaps and aim your shots.",
 
         brickLayout: Object.freeze([
             Object.freeze([0, 0, 3, 3, 3, 0, 0]),
@@ -151,6 +161,7 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 4,
         name: "Item Rain",
+        description: "Catch falling items to gain a life, widen your paddle or slow down the ball.",
 
         brickLayout: DEFAULT_BRICK_LAYOUT,
 
@@ -166,6 +177,7 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 5,
         name: "Explosive Chain",
+        description: "Break orange bricks to damage nearby bricks and trigger chain reactions.",
 
         brickLayout: Object.freeze([
             Object.freeze([1, 1, 1, 1, 1, 1, 1]),
@@ -187,6 +199,7 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 6,
         name: "Multiball Chaos",
+        description: "Keep three balls in play. You only lose a life when all balls fall off the screen.",
 
         brickLayout: Object.freeze([
             Object.freeze([0, 1, 1, 2, 1, 1, 0]),
@@ -202,6 +215,7 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 7,
         name: "Steel Fortress",
+        description: "Steel bricks cannot be destroyed. Clear all breakable bricks to win.",
 
         brickLayout: Object.freeze([
             Object.freeze([1, 1, 2, 2, 2, 1, 1]),
@@ -235,17 +249,23 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 8,
-        name: "Power Battle"
+        name: "Power Battle",
+        description: "Preview only: the power battle mechanic is still in development. This level currently uses classic bricks.",
+        inDevelopment: true
     }),
 
     Object.freeze({
         id: 9,
-        name: "Gravity Zone"
+        name: "Gravity Zone",
+        description: "Preview only: the gravity mechanic is still in development. This level currently uses classic bricks.",
+        inDevelopment: true
     }),
 
     Object.freeze({
         id: 10,
-        name: "Final Boss"
+        name: "Final Boss",
+        description: "Preview only: the boss battle is still in development. This level currently uses classic bricks.",
+        inDevelopment: true
     })
 ]);
 
@@ -255,6 +275,7 @@ let lives=INITIAL_LIVES;
 let score=0;
 let gameState = GAME_STATES.LEVEL_SELECT;
 let currentLevelIndex = 0;
+let selectedLevelIndex = 0;
 let bricks = [];
 let balls = [];
 let brickFormationOffsetX = 0;
@@ -271,7 +292,7 @@ window.addEventListener("keydown", (event) => {
     }
 
     if (gameState === GAME_STATES.LEVEL_SELECT) {
-        handleLevelSelectKey(event.key);
+        handleLevelSelectKey(event);
         return;
     }
     if (
@@ -337,62 +358,105 @@ function createBall(
     };
 }
 
-function getLevelMenuCards() {
-    const totalWidth =
-        LEVEL_MENU_CONFIG.columns *
-        LEVEL_MENU_CONFIG.cardWidth +
-        (LEVEL_MENU_CONFIG.columns - 1) *
-        LEVEL_MENU_CONFIG.gapX;
+function createLevelMenu() {
+    for (const [index, level] of LEVELS.entries()) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "level-card";
 
-    const startX =
-        (canvas.width - totalWidth) / 2;
+        const number = document.createElement("span");
+        number.className = "level-card-number";
+        number.textContent = `Level ${level.id}`;
 
-    return LEVELS.map((level, index) => {
-        const row =
-            Math.floor(
-                index / LEVEL_MENU_CONFIG.columns
-            );
+        const name = document.createElement("strong");
+        name.className = "level-card-name";
+        name.textContent = level.name;
 
-        const column =
-            index % LEVEL_MENU_CONFIG.columns;
+        button.append(number, name);
 
-        const x =
-            startX +
-            column *
-            (
-                LEVEL_MENU_CONFIG.cardWidth +
-                LEVEL_MENU_CONFIG.gapX
-            );
+        if (level.inDevelopment) {
+            button.classList.add("level-card-in-development");
 
-        const y =
-            LEVEL_MENU_CONFIG.startY +
-            row *
-            (
-                LEVEL_MENU_CONFIG.cardHeight +
-                LEVEL_MENU_CONFIG.gapY
-            );
+            const status = document.createElement("span");
+            status.className = "level-card-status";
+            status.textContent = "In development";
+            button.append(status);
+        }
 
-        return {
-            levelIndex: index,
-            level,
-            x,
-            y,
+        button.addEventListener("pointermove", () => button.focus({ preventScroll: true }));
+        button.addEventListener("focus", () => selectMenuLevel(index));
+        button.addEventListener("click", () => startLevel(index));
 
-            width: LEVEL_MENU_CONFIG.cardWidth,
-            height: LEVEL_MENU_CONFIG.cardHeight
-        };
-    });
+        levelMenu.grid.append(button);
+    }
+
+    selectMenuLevel(selectedLevelIndex);
 }
 
-function handleLevelSelectKey(key) {
+function selectMenuLevel(levelIndex) {
+    selectedLevelIndex = levelIndex;
+    const level = LEVELS[levelIndex];
+
+    for (const [index, button] of [...levelMenu.grid.children].entries()) {
+        button.classList.toggle("is-selected", index === levelIndex);
+    }
+
+    levelMenu.title.textContent = `Level ${level.id}: ${level.name}`;
+    levelMenu.description.textContent = level.description;
+}
+
+function handleLevelSelectKey(event) {
+    const key = event.key;
+
     if (key >= "1" && key <= "9") {
+        event.preventDefault();
         startLevel(Number(key) - 1);
         return;
     }
 
     if (key === "0" && LEVELS.length >= 10) {
+        event.preventDefault();
         startLevel(9);
+        return;
     }
+
+    // Let focused buttons handle Enter and Space through their native click event.
+    if (key === "Enter" && !levelMenu.grid.contains(document.activeElement)) {
+        event.preventDefault();
+        startLevel(selectedLevelIndex);
+        return;
+    }
+
+    const columns = getComputedStyle(levelMenu.grid).gridTemplateColumns.split(" ").length;
+    let nextIndex = selectedLevelIndex;
+
+    switch (key) {
+        case "ArrowLeft":
+            nextIndex--;
+            break;
+        case "ArrowRight":
+            nextIndex++;
+            break;
+        case "ArrowUp":
+            nextIndex -= columns;
+            break;
+        case "ArrowDown":
+            nextIndex += columns;
+            break;
+        case "Home":
+            nextIndex = 0;
+            break;
+        case "End":
+            nextIndex = LEVELS.length - 1;
+            break;
+        default:
+            return;
+    }
+
+    event.preventDefault();
+    nextIndex = Math.max(0, Math.min(LEVELS.length - 1, nextIndex));
+    selectMenuLevel(nextIndex);
+    levelMenu.grid.children[nextIndex].focus();
 }
 
 function startLevel(levelIndex) {
@@ -408,6 +472,8 @@ function startLevel(levelIndex) {
     resetLevelState();
 
     gameState = GAME_STATES.PLAYING;
+    updateHud();
+    canvas.focus({ preventScroll: true });
 }
 
 function openLevelSelectMenu() {
@@ -415,47 +481,10 @@ function openLevelSelectMenu() {
     paddle.moveRight = false;
 
     gameState = GAME_STATES.LEVEL_SELECT;
+    updateHud();
+    selectMenuLevel(currentLevelIndex);
+    levelMenu.grid.children[currentLevelIndex].focus({ preventScroll: true });
 }
-
-canvas.addEventListener("click", (event) => {
-    if (
-        gameState !== GAME_STATES.LEVEL_SELECT
-    ) {
-        return;
-    }
-
-    const rect =
-        canvas.getBoundingClientRect();
-
-    const scaleX =
-        canvas.width / rect.width;
-
-    const scaleY =
-        canvas.height / rect.height;
-
-    const mouseX =
-        (event.clientX - rect.left) * scaleX;
-
-    const mouseY =
-        (event.clientY - rect.top) * scaleY;
-
-    const cards = getLevelMenuCards();
-
-    const clickedCard = cards.find((card) => {
-        return (
-            mouseX >= card.x &&
-            mouseX <= card.x + card.width &&
-            mouseY >= card.y &&
-            mouseY <= card.y + card.height
-        );
-    });
-
-    if (!clickedCard) {
-        return;
-    }
-
-    startLevel(clickedCard.levelIndex);
-});
 
 function isItemCollidingWithPaddle(item) {
     const itemLeft = item.x;
@@ -863,12 +892,6 @@ function getRemainingBreakableBrickCount() {
         brick =>
             isBreakableBrick(brick) &&
             !brick.destroyed
-    ).length;
-}
-
-function getTotalBreakableBrickCount() {
-    return bricks.filter(
-        isBreakableBrick
     ).length;
 }
 
@@ -1526,81 +1549,6 @@ function update(deltaTime) {
     checkLevelCompletion();
 }
 
-function drawLevelSelectMenu() {
-    const cards = getLevelMenuCards();
-
-    ctx.fillStyle = "white";
-    ctx.textAlign = "center";
-
-    ctx.font = "40px Arial";
-    ctx.fillText(
-        "SELECT LEVEL",
-        canvas.width / 2,
-        100
-    );
-
-    ctx.font = "16px Arial";
-    ctx.fillText(
-        "Choose any level to start",
-        canvas.width / 2,
-        135
-    );
-
-    for (const card of cards) {
-        ctx.fillStyle = "#1a1a1a";
-
-        ctx.fillRect(
-            card.x,
-            card.y,
-            card.width,
-            card.height
-        );
-
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 2;
-
-        ctx.strokeRect(
-            card.x,
-            card.y,
-            card.width,
-            card.height
-        );
-
-        ctx.fillStyle = "white";
-
-        ctx.font = "18px Arial";
-        ctx.fillText(
-            `Level ${card.level.id}`,
-            card.x + card.width / 2,
-            card.y + 28
-        );
-
-        ctx.font = "13px Arial";
-        ctx.fillText(
-            card.level.name,
-            card.x + card.width / 2,
-            card.y + 52
-        );
-    }
-
-    ctx.font = "15px Arial";
-    ctx.fillStyle = "white";
-
-    ctx.fillText(
-        "Click a level or press 1-9 / 0 for Level 10",
-        canvas.width / 2,
-        405
-    );
-
-    ctx.fillText(
-        "Press M during gameplay to return here",
-        canvas.width / 2,
-        435
-    );
-
-    ctx.textAlign = "left";
-}
-
 function drawPaddle() {
     ctx.fillStyle = "white";
 
@@ -1635,63 +1583,59 @@ function drawBalls() {
     }
 }
 
-function drawHud() {
+function setHudText(element, value) {
+    const text = String(value);
+
+    if (element.textContent !== text) {
+        element.textContent = text;
+    }
+}
+
+function updateHud() {
+    const isLevelSelect =
+        gameState === GAME_STATES.LEVEL_SELECT;
+
+    hud.container.hidden = isLevelSelect;
+    hud.controls.hidden = isLevelSelect;
+    levelMenu.container.hidden = !isLevelSelect;
+    canvas.hidden = isLevelSelect;
+
+    if (isLevelSelect) {
+        return;
+    }
+
     const currentLevel = getCurrentLevel();
-    const remainingBreakableBricks =
-        getRemainingBreakableBrickCount();
 
-    const totalBreakableBricks =
-        getTotalBreakableBrickCount();
+    setHudText(hud.lives, lives);
+    setHudText(hud.score, score);
+    setHudText(hud.levelNumber, `Level ${currentLevel.id} / ${LEVELS.length}`);
+    setHudText(hud.levelName, currentLevel.name);
+    setHudText(hud.bricks, getRemainingBreakableBrickCount());
+    setHudText(hud.balls, balls.length);
+}
 
-    ctx.fillStyle = "white";
-    ctx.font = "20px Arial";
+function resizeGameLayout() {
+    const bodyStyle = getComputedStyle(document.body);
+    const availableWidth = document.documentElement.clientWidth -
+        parseFloat(bodyStyle.paddingLeft) - parseFloat(bodyStyle.paddingRight);
+    const availableHeight = window.innerHeight -
+        parseFloat(bodyStyle.paddingTop) - parseFloat(bodyStyle.paddingBottom);
 
-    ctx.textAlign = "left";
-    ctx.fillText(
-        `Lives: ${lives}`,
-        20,
-        30
-    );
+    // The HTML menu keeps readable text and can scroll on smaller screens.
+    if (gameState === GAME_STATES.LEVEL_SELECT) {
+        gameContainer.style.width = `${Math.min(canvas.width, availableWidth)}px`;
+        return;
+    }
 
-    ctx.textAlign = "right";
-    ctx.fillText(
-        `Score: ${score}`,
-        canvas.width - 20,
-        30
-    );
+    // Reserve space for the title, HUD and controls before sizing the canvas.
+    const interfaceHeight = gameContainer.offsetHeight - canvas.offsetHeight;
+    const borderWidth = canvas.offsetWidth - canvas.clientWidth;
+    const borderHeight = canvas.offsetHeight - canvas.clientHeight;
+    const canvasHeight = Math.max(0, availableHeight - interfaceHeight - borderHeight);
+    const widthFromHeight = canvasHeight * (canvas.width / canvas.height) + borderWidth;
+    const gameWidth = Math.min(canvas.width, availableWidth, widthFromHeight);
 
-    ctx.textAlign = "center";
-    ctx.fillText(
-        `Level ${currentLevel.id}/${LEVELS.length}: ${currentLevel.name}`,
-        canvas.width / 2,
-        30
-    );
-
-    ctx.font = "16px Arial";
-
-    ctx.textAlign = "left";
-    ctx.fillText(
-        "Move: A / D or <- / ->",
-        20,
-        55
-    );
-
-    ctx.textAlign = "center";
-    ctx.fillText(
-        `Breakable: ${remainingBreakableBricks}/${totalBreakableBricks}`,
-        canvas.width / 2,
-        55
-    );
-
-    ctx.textAlign = "right";
-
-    ctx.fillText(
-        `Balls: ${balls.length}`,
-        canvas.width - 20,
-        55
-    );
-
-    ctx.textAlign = "left";
+    gameContainer.style.width = `${Math.floor(gameWidth)}px`;
 }
 
 function drawBricks() {
@@ -1842,7 +1786,6 @@ function draw() {
     if (
         gameState === GAME_STATES.LEVEL_SELECT
     ) {
-        drawLevelSelectMenu();
         return;
     }
 
@@ -1854,7 +1797,6 @@ function draw() {
         drawBalls();
     }
 
-    drawHud();
     drawLevelComplete();
     drawGameOver();
 }
@@ -1868,13 +1810,21 @@ function gameLoop(timestamp){
 
     lastTime=timestamp;
     update(deltaTime);
+    updateHud();
     draw();
 
     requestAnimationFrame(gameLoop);
 }
 
+createLevelMenu();
 resetPaddle();
 resetBalls();
 resetBricks();
+
+const gameLayoutObserver = new ResizeObserver(() => {
+    requestAnimationFrame(resizeGameLayout);
+});
+gameLayoutObserver.observe(gameContainer);
+window.addEventListener("resize", resizeGameLayout);
 
 requestAnimationFrame(gameLoop);

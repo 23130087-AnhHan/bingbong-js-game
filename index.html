@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>BingBong JS Game</title>
     <link rel="stylesheet" href="css/style.css">
@@ -14,13 +13,64 @@
 <main class="game-container">
     <h1>BingBong</h1>
 
+    <section id="levelMenu" class="level-menu" aria-labelledby="levelMenuTitle">
+        <h2 id="levelMenuTitle">Select level</h2>
+        <p class="level-menu-intro">Choose a challenge. Each level introduces a different mechanic.</p>
+
+        <div id="levelGrid" class="level-grid" role="group" aria-label="Levels"></div>
+
+        <div class="level-details" aria-live="polite" aria-atomic="true">
+            <strong id="levelDetailsTitle"></strong>
+            <p id="levelDescription"></p>
+        </div>
+
+        <p class="level-menu-help">
+            Click a level or use arrow keys and <kbd>Enter</kbd>.<br>
+            Shortcuts: <kbd>1</kbd>&ndash;<kbd>9</kbd>, <kbd>0</kbd> for Level 10.
+            Press <kbd>M</kbd> during gameplay to return here.
+        </p>
+    </section>
+
+    <section id="gameHud" class="game-hud" aria-label="Game status" hidden>
+        <div class="game-hud-primary">
+            <div class="game-stat">
+                <span class="game-stat-label">Lives</span>
+                <strong id="hudLives" class="game-stat-value">3</strong>
+            </div>
+
+            <div class="game-level">
+                <span id="hudLevelNumber" class="game-stat-label">Level 1 / 10</span>
+                <strong id="hudLevelName" class="game-level-name">Classic Breakout</strong>
+            </div>
+
+            <div class="game-stat game-stat-score">
+                <span class="game-stat-label">Score</span>
+                <strong id="hudScore" class="game-stat-value">0</strong>
+            </div>
+        </div>
+
+        <div class="game-hud-secondary">
+            <span>Bricks left: <strong id="hudBricks">35</strong></span>
+            <span>Balls: <strong id="hudBalls">1</strong></span>
+        </div>
+    </section>
+
     <canvas
             id="gameCanvas"
             width="800"
-            height="600">
+            height="600"
+            tabindex="-1"
+            aria-label="BingBong playfield"
+            hidden>
     </canvas>
-    <script src="js/main.js"></script>
+
+    <p id="gameControls" class="game-controls" hidden>
+        <span>Move: <kbd>A</kbd> / <kbd>D</kbd> or <kbd>&larr;</kbd> / <kbd>&rarr;</kbd></span>
+        <span><kbd>M</kbd> Level select</span>
+    </p>
 </main>
+
+<script src="js/main.js"></script>
 
 </body>
 </html>
