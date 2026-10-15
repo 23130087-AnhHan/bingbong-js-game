@@ -69,7 +69,8 @@ const paddle = {
     speed: 420,
 
     moveLeft: false,
-    moveRight: false
+    moveRight: false,
+    mouseTargetX: null
 };
 
 const MIN_BOUNCE_ANGLE = Math.PI / 12;
@@ -323,10 +324,12 @@ window.addEventListener("keydown", (event) => {
 
     if(event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
         paddle.moveLeft= true;
+        paddle.mouseTargetX = null;
     }
 
     if(event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
         paddle.moveRight= true;
+        paddle.mouseTargetX = null;
     }
 
 });
@@ -340,6 +343,29 @@ window.addEventListener("keyup", (event) => {
         paddle.moveRight= false;
     }
 });
+
+canvas.addEventListener("mousemove", (event) => {
+    if (
+        gameState !== GAME_STATES.PLAYING ||
+        paddle.moveLeft ||
+        paddle.moveRight
+    ) {
+        return;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / canvas.clientWidth;
+
+    // Convert the pointer position inside the border to game coordinates.
+    paddle.mouseTargetX =
+        (event.clientX - rect.left - canvas.clientLeft) * scaleX;
+});
+
+canvas.addEventListener("mouseleave", () => {
+    paddle.mouseTargetX = null;
+});
+
+window.addEventListener("blur", resetPaddleInput);
 
 function createBall(
     x,
@@ -477,8 +503,7 @@ function startLevel(levelIndex) {
 }
 
 function openLevelSelectMenu() {
-    paddle.moveLeft = false;
-    paddle.moveRight = false;
+    resetPaddleInput();
 
     gameState = GAME_STATES.LEVEL_SELECT;
     updateHud();
@@ -1028,6 +1053,12 @@ function resetItems() {
     items = [];
 }
 
+function resetPaddleInput() {
+    paddle.moveLeft = false;
+    paddle.moveRight = false;
+    paddle.mouseTargetX = null;
+}
+
 function resetPaddle() {
     paddle.width =
         PADDLE_BASE_WIDTH;
@@ -1035,8 +1066,7 @@ function resetPaddle() {
     paddle.x =
         (canvas.width - paddle.width) / 2;
 
-    paddle.moveLeft = false;
-    paddle.moveRight = false;
+    resetPaddleInput();
 }
 
 function resetBalls() {
@@ -1501,14 +1531,20 @@ function clampPaddleToCanvas() {
 }
 
 function updatePaddle(deltaTime) {
-    if (paddle.moveLeft) {
-        paddle.x -=
-            paddle.speed * deltaTime;
-    }
+    const maxMovement = paddle.speed * deltaTime;
 
-    if (paddle.moveRight) {
-        paddle.x +=
-            paddle.speed * deltaTime;
+    if (paddle.moveLeft || paddle.moveRight) {
+        const direction = Number(paddle.moveRight) - Number(paddle.moveLeft);
+        paddle.x += direction * maxMovement;
+    } else if (paddle.mouseTargetX !== null) {
+        const targetX = Math.max(
+            0,
+            Math.min(canvas.width - paddle.width, paddle.mouseTargetX - paddle.width / 2)
+        );
+        const distance = targetX - paddle.x;
+
+        // Follow the mouse at the keyboard speed and stop exactly at the target.
+        paddle.x += Math.sign(distance) * Math.min(Math.abs(distance), maxMovement);
     }
 
     clampPaddleToCanvas();
