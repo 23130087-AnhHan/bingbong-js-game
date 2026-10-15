@@ -2,6 +2,29 @@ const canvas = document.getElementById('gameCanvas');
 const ctx= canvas.getContext('2d');
 const gameContainer = document.querySelector(".game-container");
 
+// Read the shared CSS palette once when the game loads.
+const themeStyles = getComputedStyle(document.documentElement);
+
+function getThemeColor(property) {
+    return themeStyles.getPropertyValue(property).trim();
+}
+
+const GAME_COLORS = Object.freeze({
+    paddle: getThemeColor("--color-accent"),
+    ball: getThemeColor("--color-ball"),
+    text: getThemeColor("--color-text"),
+    detail: getThemeColor("--color-ink"),
+    border: getThemeColor("--color-border"),
+    brickOneHit: getThemeColor("--color-brick-one-hit"),
+    brickTwoHits: getThemeColor("--color-brick-two-hits"),
+    brickThreeHits: getThemeColor("--color-brick-three-hits"),
+    explosiveBrick: getThemeColor("--color-explosive"),
+    steelBrick: getThemeColor("--color-steel"),
+    success: getThemeColor("--color-success"),
+    danger: getThemeColor("--color-danger"),
+    endOverlay: getThemeColor("--color-end-overlay")
+});
+
 const gameView = {
     board: document.getElementById("gameBoard"),
     readyMessage: document.getElementById("readyMessage"),
@@ -40,9 +63,9 @@ const SLOW_BALL_MULTIPLIER = 0.75;
 const MIN_BALL_SPEED = 220;
 
 const BRICK_STYLES = Object.freeze({
-    1: "#ffffff",
-    2: "#bdbdbd",
-    3: "#8a8a8a"
+    1: GAME_COLORS.brickOneHit,
+    2: GAME_COLORS.brickTwoHits,
+    3: GAME_COLORS.brickThreeHits
 });
 
 const BRICK_TYPES = Object.freeze({
@@ -52,8 +75,6 @@ const BRICK_TYPES = Object.freeze({
 });
 
 const EXPLOSION_RADIUS = 95;
-const EXPLOSIVE_BRICK_COLOR = "#ff8c42";
-const STEEL_BRICK_COLOR = "#5f6f7a";
 
 const BRICK_CONFIG = Object.freeze({
     width: 72,
@@ -108,6 +129,12 @@ const ITEM_LABELS = Object.freeze({
     [ITEM_TYPES.SLOW_BALL]: "S"
 });
 
+const ITEM_COLORS = Object.freeze({
+    [ITEM_TYPES.EXTRA_LIFE]: getThemeColor("--color-item-life"),
+    [ITEM_TYPES.EXPAND_PADDLE]: getThemeColor("--color-item-expand"),
+    [ITEM_TYPES.SLOW_BALL]: getThemeColor("--color-item-slow")
+});
+
 const ITEM_CONFIG = Object.freeze({
     width: 30,
     height: 22,
@@ -137,7 +164,7 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 2,
         name: "Hard Shell",
-        description: "Tougher bricks need multiple hits. Keep going until every brick is destroyed.",
+        description: "Tougher bricks need multiple hits. The number on each brick shows its remaining hits.",
 
         brickLayout: Object.freeze([
             Object.freeze([2, 2, 2, 2, 2, 2, 2]),
@@ -170,7 +197,7 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 4,
         name: "Item Rain",
-        description: "Catch falling items to gain a life, widen your paddle or slow down the ball.",
+        description: "Catch falling items: +1 gives a life, W widens your paddle and S slows the ball.",
 
         brickLayout: DEFAULT_BRICK_LAYOUT,
 
@@ -186,7 +213,7 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 5,
         name: "Explosive Chain",
-        description: "Break orange bricks to damage nearby bricks and trigger chain reactions.",
+        description: "Break coral-red bricks marked with a star to damage nearby bricks and trigger chain reactions.",
 
         brickLayout: Object.freeze([
             Object.freeze([1, 1, 1, 1, 1, 1, 1]),
@@ -224,7 +251,7 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 7,
         name: "Steel Fortress",
-        description: "Steel bricks cannot be destroyed. Clear all breakable bricks to win.",
+        description: "Steel bricks with rivets cannot be destroyed. Clear all breakable bricks to win.",
 
         brickLayout: Object.freeze([
             Object.freeze([1, 1, 2, 2, 2, 1, 1]),
@@ -1324,19 +1351,19 @@ function getBrickColor(brick) {
         brick.type ===
         BRICK_TYPES.STEEL
     ) {
-        return STEEL_BRICK_COLOR;
+        return GAME_COLORS.steelBrick;
     }
 
     if (
         brick.type ===
         BRICK_TYPES.EXPLOSIVE
     ) {
-        return EXPLOSIVE_BRICK_COLOR;
+        return GAME_COLORS.explosiveBrick;
     }
 
     return (
         BRICK_STYLES[brick.maxHp] ||
-        "#6f6f6f"
+        GAME_COLORS.brickOneHit
     );
 }
 
@@ -1353,8 +1380,8 @@ function getBrickDamageAlpha(brick) {
         brick.hp / brick.maxHp;
 
     return (
-        0.55 +
-        healthRatio * 0.45
+        0.8 +
+        healthRatio * 0.2
     );
 }
 
@@ -1680,7 +1707,7 @@ function update(deltaTime) {
 }
 
 function drawPaddle() {
-    ctx.fillStyle = "white";
+    ctx.fillStyle = GAME_COLORS.paddle;
 
     ctx.fillRect(
         paddle.x,
@@ -1701,7 +1728,7 @@ function drawBall(ball) {
         Math.PI * 2
     );
 
-    ctx.fillStyle = "white";
+    ctx.fillStyle = GAME_COLORS.ball;
     ctx.fill();
 
     ctx.closePath();
@@ -1739,6 +1766,7 @@ function updateHud() {
     const currentLevel = getCurrentLevel();
 
     setHudText(hud.lives, lives);
+    hud.lives.classList.toggle("is-low", lives <= 1);
     setHudText(hud.score, score);
     setHudText(hud.levelNumber, `Level ${currentLevel.id} / ${LEVELS.length}`);
     setHudText(hud.levelName, currentLevel.name);
@@ -1771,6 +1799,10 @@ function resizeGameLayout() {
 }
 
 function drawBricks() {
+    ctx.save();
+    ctx.strokeStyle = GAME_COLORS.border;
+    ctx.lineWidth = 1;
+
     for (const brick of bricks) {
         if (brick.destroyed) {
             continue;
@@ -1788,34 +1820,63 @@ function drawBricks() {
             brick.width,
             brick.height
         );
+
+        ctx.globalAlpha = 1;
+        ctx.strokeRect(brick.x + 0.5, brick.y + 0.5, brick.width - 1, brick.height - 1);
+        drawBrickDetails(brick);
     }
 
-    ctx.globalAlpha = 1;
+    ctx.restore();
+}
+
+function drawBrickDetails(brick) {
+    ctx.fillStyle = GAME_COLORS.detail;
+
+    if (brick.type === BRICK_TYPES.STEEL) {
+        for (const rivetX of [brick.x + 7, brick.x + brick.width - 7]) {
+            ctx.beginPath();
+            ctx.arc(rivetX, brick.y + brick.height / 2, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        return;
+    }
+
+    let label = brick.maxHp > 1 ? String(brick.hp) : "";
+
+    if (brick.type === BRICK_TYPES.EXPLOSIVE) {
+        label = label ? `\u2726 ${label}` : "\u2726";
+    }
+
+    if (!label) {
+        return;
+    }
+
+    ctx.font = "bold 12px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, brick.x + brick.width / 2, brick.y + brick.height / 2);
 }
 
 function drawItems() {
+    ctx.save();
+    ctx.strokeStyle = GAME_COLORS.border;
+    ctx.lineWidth = 1;
+    ctx.font = "bold 13px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
     for (const item of items) {
-        ctx.fillStyle = "#111111";
+        ctx.fillStyle = ITEM_COLORS[item.type] || GAME_COLORS.brickOneHit;
         ctx.fillRect(
             item.x,
             item.y,
             item.width,
             item.height
         );
+        ctx.strokeRect(item.x + 0.5, item.y + 0.5, item.width - 1, item.height - 1);
 
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(
-            item.x,
-            item.y,
-            item.width,
-            item.height
-        );
-
-        ctx.fillStyle = "white";
-        ctx.font = "13px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
+        ctx.fillStyle = GAME_COLORS.detail;
 
         ctx.fillText(
             ITEM_LABELS[item.type] || "?",
@@ -1824,8 +1885,7 @@ function drawItems() {
         );
     }
 
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
+    ctx.restore();
 }
 
 function drawLevelComplete() {
@@ -1838,7 +1898,7 @@ function drawLevelComplete() {
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillStyle = GAME_COLORS.endOverlay;
     ctx.fillRect(
         0,
         0,
@@ -1846,7 +1906,7 @@ function drawLevelComplete() {
         canvas.height
     );
 
-    ctx.fillStyle = "white";
+    ctx.fillStyle = GAME_COLORS.success;
     ctx.textAlign = "center";
 
     ctx.font = "42px Arial";
@@ -1856,6 +1916,7 @@ function drawLevelComplete() {
         centerY - 35
     );
 
+    ctx.fillStyle = GAME_COLORS.text;
     ctx.font = "24px Arial";
     ctx.fillText(
         currentLevel.name,
@@ -1887,17 +1948,18 @@ function drawGameOver(){
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.fillStyle = GAME_COLORS.endOverlay;
     ctx.fillRect(
         0, 0, canvas.width, canvas.height
     );
 
-    ctx.fillStyle = "white";
+    ctx.fillStyle = GAME_COLORS.danger;
     ctx.textAlign = "center";
 
     ctx.font = "48px Arial";
     ctx.fillText("Game Over!", centerX, centerY - 30);
 
+    ctx.fillStyle = GAME_COLORS.text;
     ctx.font = "20px Arial";
     ctx.fillText(`Score: ${score}`, centerX, centerY + 20);
 
