@@ -65,6 +65,11 @@ const PADDLE_MAX_WIDTH = 200;
 const SLOW_BALL_MULTIPLIER = 0.75;
 const MIN_BALL_SPEED = 220;
 
+const PHYSICS_STEP = 1 / 120;
+const MAX_FRAME_TIME = 0.25;
+const COLLISION_GAP = 0.01;
+const MAX_COLLISION_PASSES = 4;
+
 const BRICK_STYLES = Object.freeze({
     1: GAME_COLORS.brickOneHit,
     2: GAME_COLORS.brickTwoHits,
@@ -431,7 +436,18 @@ canvas.addEventListener("click", () => {
     launchBalls();
 });
 
-window.addEventListener("blur", resetPaddleInput);
+function pauseWhenInactive() {
+    resetPaddleInput();
+    pauseGame();
+    lastTime = 0;
+}
+
+window.addEventListener("blur", pauseWhenInactive);
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+        pauseWhenInactive();
+    }
+});
 
 function createBall(
     x,
@@ -446,7 +462,8 @@ function createBall(
         radius: BALL_RADIUS,
 
         velocityX,
-        velocityY
+        velocityY,
+        brickContacts: new Set()
     };
 }
 
@@ -1267,63 +1284,86 @@ function isBallCollidingWithBrick(
     );
 }
 
-function resolveBrickCollision(
-    ball,
-    brick,
-    previousX,
-    previousY
-) {
-    const wasAbove =
-        previousY + ball.radius <= brick.y;
+function resolveBrickCollision(ball, brick) {
+    const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.width));
+    const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.height));
+    const distanceX = ball.x - closestX;
+    const distanceY = ball.y - closestY;
+    const distance = Math.hypot(distanceX, distanceY);
 
-    const wasBelow =
-        previousY - ball.radius >=
-        brick.y + brick.height;
+    let normalX = 0;
+    let normalY = 0;
+    let overlap = ball.radius - distance;
 
-    const wasLeft =
-        previousX + ball.radius <= brick.x;
+    if (distance > 0) {
+        // Hướng từ điểm gần nhất trên gạch ra tâm bóng.
+        normalX = distanceX / distance;
+        normalY = distanceY / distance;
+    } else {
+        // Nếu tâm bóng đã nằm trong gạch, đẩy ra qua cạnh gần nhất.
+        const toLeft = ball.x - brick.x;
+        const toRight = brick.x + brick.width - ball.x;
+        const toTop = ball.y - brick.y;
+        const toBottom = brick.y + brick.height - ball.y;
+        const nearestEdge = Math.min(toLeft, toRight, toTop, toBottom);
 
-    const wasRight =
-        previousX - ball.radius >=
-        brick.x + brick.width;
+        if (nearestEdge === toTop) {
+            normalY = -1;
+        } else if (nearestEdge === toBottom) {
+            normalY = 1;
+        } else if (nearestEdge === toLeft) {
+            normalX = -1;
+        } else {
+            normalX = 1;
+        }
 
-    if (wasAbove) {
-        ball.y = brick.y - ball.radius;
-        ball.velocityY =
-            -Math.abs(ball.velocityY);
+        overlap = ball.radius + nearestEdge;
+    }
+
+    ball.x += normalX * (overlap + COLLISION_GAP);
+    ball.y += normalY * (overlap + COLLISION_GAP);
+
+    const speedIntoSurface = ball.velocityX * normalX + ball.velocityY * normalY;
+
+    // Bóng đang rời gạch thì chỉ tách ra, không tính thêm lần chạm.
+    if (speedIntoSurface >= 0) {
+        return false;
+    }
+
+    // Phản xạ theo hướng vuông góc với mặt va chạm, giữ nguyên tốc độ.
+    ball.velocityX -= 2 * speedIntoSurface * normalX;
+    ball.velocityY -= 2 * speedIntoSurface * normalY;
+    limitBallAngle(ball, normalX, normalY);
+
+    return true;
+}
+
+function limitBallAngle(ball, normalX, normalY) {
+    const angle = Math.atan2(Math.abs(ball.velocityX), Math.abs(ball.velocityY));
+
+    if (angle >= MIN_BOUNCE_ANGLE && angle <= MAX_BOUNCE_ANGLE) {
         return;
     }
 
-    if (wasBelow) {
-        ball.y =
-            brick.y +
-            brick.height +
-            ball.radius;
+    // Tránh bóng bay quá ngang hoặc quá dọc sau khi chạm góc gạch.
+    const limitedAngle = Math.max(MIN_BOUNCE_ANGLE, Math.min(MAX_BOUNCE_ANGLE, angle));
+    const speed = Math.hypot(ball.velocityX, ball.velocityY);
+    const directionX = Math.sign(ball.velocityX) || Math.sign(normalX) || 1;
+    const directionY = Math.sign(ball.velocityY) || Math.sign(normalY) || -1;
 
-        ball.velocityY =
-            Math.abs(ball.velocityY);
-        return;
+    ball.velocityX = directionX * speed * Math.sin(limitedAngle);
+    ball.velocityY = directionY * speed * Math.cos(limitedAngle);
+
+    // Góc mới vẫn phải hướng ra ngoài gạch.
+    if (ball.velocityX * normalX + ball.velocityY * normalY < 0) {
+        if (ball.velocityX * normalX < 0) {
+            ball.velocityX *= -1;
+        }
+
+        if (ball.velocityY * normalY < 0) {
+            ball.velocityY *= -1;
+        }
     }
-
-    if (wasLeft) {
-        ball.x = brick.x - ball.radius;
-        ball.velocityX =
-            -Math.abs(ball.velocityX);
-        return;
-    }
-
-    if (wasRight) {
-        ball.x =
-            brick.x +
-            brick.width +
-            ball.radius;
-
-        ball.velocityX =
-            Math.abs(ball.velocityX);
-        return;
-    }
-
-    ball.velocityY *= -1;
 }
 
 function damageBrick(brick) {
@@ -1388,41 +1428,38 @@ function getBrickDamageAlpha(brick) {
     );
 }
 
-function handleBrickCollisions(
-    ball,
-    previousX,
-    previousY
-) {
-    for (const brick of bricks) {
-        if (brick.destroyed) {
-            continue;
+function handleBrickCollisions(ball) {
+    const contacts = new Set();
+
+    // Kiểm tra lại vì việc tách khỏi một viên có thể chạm viên bên cạnh.
+    for (let pass = 0; pass < MAX_COLLISION_PASSES; pass++) {
+        let foundCollision = false;
+
+        for (const brick of bricks) {
+            if (brick.destroyed || !isBallCollidingWithBrick(ball, brick)) {
+                continue;
+            }
+
+            foundCollision = true;
+            const isNewContact = !ball.brickContacts.has(brick) && !contacts.has(brick);
+            contacts.add(brick);
+            const bounced = resolveBrickCollision(ball, brick);
+
+            if (bounced && isNewContact) {
+                const wasDestroyed = damageBrick(brick);
+
+                if (wasDestroyed) {
+                    handleBrickDestroyed(brick);
+                }
+            }
         }
 
-        if (
-            !isBallCollidingWithBrick(
-                ball,
-                brick
-            )
-        ) {
-            continue;
+        if (!foundCollision) {
+            break;
         }
-
-        const wasDestroyed =
-            damageBrick(brick);
-
-        if (wasDestroyed) {
-            handleBrickDestroyed(brick);
-        }
-
-        resolveBrickCollision(
-            ball,
-            brick,
-            previousX,
-            previousY
-        );
-
-        break;
     }
+
+    ball.brickContacts = contacts;
 }
 
 function handleBrickDestroyed(brick) {
@@ -1664,9 +1701,6 @@ function updatePaddle(deltaTime) {
 }
 
 function updateBall(ball, deltaTime) {
-    const previousX = ball.x;
-    const previousY = ball.y;
-
     ball.x +=
         ball.velocityX * deltaTime;
 
@@ -1676,16 +1710,35 @@ function updateBall(ball, deltaTime) {
     handleWallCollision(ball);
     handlePaddleCollision(ball);
 
-    handleBrickCollisions(
-        ball,
-        previousX,
-        previousY
-    );
+    handleBrickCollisions(ball);
 
     return hasBallMissed(ball);
 }
 
 function update(deltaTime) {
+    if (
+        deltaTime <= 0 ||
+        (gameState !== GAME_STATES.PLAYING && gameState !== GAME_STATES.READY)
+    ) {
+        return;
+    }
+
+    // Chia khung hình chậm thành các bước nhỏ để bóng không nhảy qua vật cản.
+    const frameTime = Math.min(deltaTime, MAX_FRAME_TIME);
+    const stepCount = Math.ceil(frameTime / PHYSICS_STEP);
+    const stepTime = frameTime / stepCount;
+    const initialState = gameState;
+
+    for (let step = 0; step < stepCount; step++) {
+        updateGameStep(stepTime);
+
+        if (gameState !== initialState) {
+            break;
+        }
+    }
+}
+
+function updateGameStep(deltaTime) {
     if (gameState === GAME_STATES.READY) {
         updatePaddle(deltaTime);
         attachBallsToPaddle();

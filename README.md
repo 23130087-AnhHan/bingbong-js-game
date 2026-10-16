@@ -25,6 +25,8 @@ Di chuyển thanh đỡ để giữ bóng trong sân và phá hết các viên g
 
 Bóng chờ trên thanh đỡ khi bắt đầu màn hoặc sau khi mất mạng. Bạn có thể di chuyển thanh đỡ trước khi phát bóng. Mỗi màn bắt đầu với 3 mạng; khi có nhiều bóng, chỉ mất mạng khi toàn bộ bóng rơi khỏi sân.
 
+Trò chơi tự tạm dừng khi bạn chuyển sang cửa sổ hoặc thẻ khác. Khi quay lại, nhấn C để tiếp tục.
+
 ## Vật phẩm
 
 - **+1:** thêm một mạng, tối đa 5 mạng.
