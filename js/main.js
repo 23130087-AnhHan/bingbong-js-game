@@ -869,71 +869,52 @@ function handleWallCollision(ball) {
     }
 }
 
-function handlePaddleCollision(ball){
-    const ballLeft = ball.x - ball.radius;
-    const ballRight = ball.x + ball.radius;
-    const ballTop = ball.y - ball.radius;
-    const ballBottom = ball.y + ball.radius;
+function handlePaddleCollision(ball) {
+    // Chỉ đỡ bóng đang rơi từ phía trên, không cứu bóng đã lọt xuống dưới.
+    if (ball.velocityY <= 0 || ball.y > paddle.y) {
+        return;
+    }
 
-    const paddleLeft = paddle.x;
-    const paddleRight = paddle.x + paddle.width;
-    const paddleTop = paddle.y;
-    const paddleBottom = paddle.y + paddle.height;
+    // Tìm điểm gần tâm bóng nhất trên mép trên của thanh đỡ.
+    const closestX = Math.max(
+        paddle.x,
+        Math.min(ball.x, paddle.x + paddle.width)
+    );
+    const distanceX = ball.x - closestX;
+    const distanceY = ball.y - paddle.y;
+    const distanceSquared = distanceX * distanceX + distanceY * distanceY;
 
-    const overlapsHorizontally =
-        ballRight >= paddleLeft &&
-        ballLeft <= paddleRight;
+    // Kiểm tra bằng bán kính thật để tránh nhận nhầm va chạm ở góc.
+    if (distanceSquared > ball.radius * ball.radius) {
+        return;
+    }
 
-    const overlapsVertically =
-        ballBottom >= paddleTop &&
-        ballTop <= paddleBottom;
+    ball.y = paddle.y - ball.radius - COLLISION_GAP;
 
-    if (
-        overlapsHorizontally &&
-        overlapsVertically &&
-        ball.velocityY>0
-    ){
-        ball.y =paddle.y - ball.radius;
+    const paddleCenter = paddle.x + paddle.width / 2;
+    const hitPosition = (ball.x - paddleCenter) / (paddle.width / 2);
+    const clampedHitPosition = Math.max(-1, Math.min(1, hitPosition));
 
-        const paddleCenter=
-            paddle.x + paddle.width/2;
+    let bounceAngle = clampedHitPosition * MAX_BOUNCE_ANGLE;
 
-        const hitPosition=
-            (ball.x - paddleCenter)/
-            (paddle.width / 2);
-        const clampedHitPosition =
-            Math.max(-1, Math.min(1, hitPosition));
+    if (Math.abs(bounceAngle) < MIN_BOUNCE_ANGLE) {
+        let direction = Math.sign(clampedHitPosition);
 
-        let bounceAngle =
-            clampedHitPosition * MAX_BOUNCE_ANGLE;
-
-        if (Math.abs(bounceAngle) < MIN_BOUNCE_ANGLE) {
-            let direction = Math.sign(clampedHitPosition);
-
-            if (direction === 0) {
-                direction = Math.sign(ball.velocityX);
-            }
-
-            if (direction === 0) {
-                direction =
-                    Math.random() < 0.5 ? -1 : 1;
-            }
-
-            bounceAngle =
-                direction * MIN_BOUNCE_ANGLE;
+        if (direction === 0) {
+            direction = Math.sign(ball.velocityX);
         }
 
-        const speed = Math.hypot(
-            ball.velocityX,
-            ball.velocityY
-        );
+        if (direction === 0) {
+            direction = Math.random() < 0.5 ? -1 : 1;
+        }
 
-        ball.velocityX =
-            speed * Math.sin(bounceAngle);
-
-        ball.velocityY =
-            -speed * Math.cos(bounceAngle);
+        bounceAngle = direction * MIN_BOUNCE_ANGLE;
     }
+
+    const speed = Math.hypot(ball.velocityX, ball.velocityY);
+
+    ball.velocityX = speed * Math.sin(bounceAngle);
+    ball.velocityY = -speed * Math.cos(bounceAngle);
 }
 
 
