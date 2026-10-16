@@ -10,11 +10,15 @@
     --color-text: #0f172a;
     --color-text-muted: #475569;
     --color-accent: #0369a1;
-    --color-ball: #0f172a;
+    --color-paddle: #9e3f1b;
+    --color-ball: #8f9da7;
+    --color-ball-highlight: #f1f5f9;
+    --color-ball-shadow: #64748b;
     --color-ink: #0f172a;
-    --color-brick-one-hit: #edc9a2;
-    --color-brick-two-hits: #e6a46b;
-    --color-brick-three-hits: #ca8960;
+    --color-brick-one-hit: #bf6337;
+    --color-brick-two-hits: #9f4826;
+    --color-brick-three-hits: #82381e;
+    --color-brick-label: #fff7ed;
     --color-explosive: #f87171;
     --color-steel: #94a3b8;
     --color-item-life: #4ade80;
@@ -291,7 +295,7 @@ body {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 4px 20px;
+    gap: 4px 12px;
     margin: 8px 0 0;
     color: var(--color-text-muted);
     font-size: 13px;

@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>BingBong JS Game</title>
+    <title>BingBong – Trò chơi phá gạch</title>
     <link rel="stylesheet" href="css/style.css">
 
 </head>
@@ -14,10 +14,10 @@
     <h1>BingBong</h1>
 
     <section id="levelMenu" class="level-menu" aria-labelledby="levelMenuTitle">
-        <h2 id="levelMenuTitle">Select level</h2>
-        <p class="level-menu-intro">Choose a challenge. Each level introduces a different mechanic.</p>
+        <h2 id="levelMenuTitle">Chọn màn chơi</h2>
+        <p class="level-menu-intro">Mỗi màn có thử thách riêng. Chọn một màn để bắt đầu.</p>
 
-        <div id="levelGrid" class="level-grid" role="group" aria-label="Levels"></div>
+        <div id="levelGrid" class="level-grid" role="group" aria-label="Danh sách màn chơi"></div>
 
         <div class="level-details" aria-live="polite" aria-atomic="true">
             <strong id="levelDetailsTitle"></strong>
@@ -25,35 +25,36 @@
         </div>
 
         <p class="level-menu-help">
-            Click a level or use arrow keys and <kbd>Enter</kbd>.<br>
-            Shortcuts: <kbd>1</kbd>&ndash;<kbd>9</kbd>, <kbd>0</kbd> for Level 10.
-            Press <kbd>M</kbd> during gameplay to return here.
-            <br>After choosing a level, click the playfield or press <kbd>Space</kbd> to launch.
-            <kbd>P</kbd> pauses; <kbd>C</kbd> continues.
+            Nhấp vào một màn hoặc dùng phím mũi tên rồi nhấn <kbd>Enter</kbd>.<br>
+            Chọn nhanh: <kbd>1</kbd>&ndash;<kbd>9</kbd>; <kbd>0</kbd> chọn màn 10.
+            Nhấn <kbd>M</kbd> để về đây khi đang chơi.<br>
+            Nhấp trong sân hoặc nhấn <kbd>Space</kbd> (phím cách) để phát bóng.
+            <kbd>P</kbd> tạm dừng; <kbd>C</kbd> tiếp tục.<br>
+            Vật phẩm: <strong>+1</strong> thêm mạng; <strong>↔</strong> mở rộng thanh đỡ; <strong>↓</strong> làm chậm bóng.
         </p>
     </section>
 
-    <section id="gameHud" class="game-hud" aria-label="Game status" hidden>
+    <section id="gameHud" class="game-hud" aria-label="Thông tin trận đấu" hidden>
         <div class="game-hud-primary">
             <div class="game-stat">
-                <span class="game-stat-label">Lives</span>
+                <span class="game-stat-label">Mạng</span>
                 <strong id="hudLives" class="game-stat-value">3</strong>
             </div>
 
             <div class="game-level">
-                <span id="hudLevelNumber" class="game-stat-label">Level 1 / 10</span>
-                <strong id="hudLevelName" class="game-level-name">Classic Breakout</strong>
+                <span id="hudLevelNumber" class="game-stat-label">Màn 1 / 10</span>
+                <strong id="hudLevelName" class="game-level-name">Phá gạch cơ bản</strong>
             </div>
 
             <div class="game-stat game-stat-score">
-                <span class="game-stat-label">Score</span>
+                <span class="game-stat-label">Điểm</span>
                 <strong id="hudScore" class="game-stat-value">0</strong>
             </div>
         </div>
 
         <div class="game-hud-secondary">
-            <span>Bricks left: <strong id="hudBricks">35</strong></span>
-            <span>Balls: <strong id="hudBalls">1</strong></span>
+            <span>Gạch còn lại: <strong id="hudBricks">35</strong></span>
+            <span>Số bóng: <strong id="hudBalls">1</strong></span>
         </div>
     </section>
 
@@ -63,28 +64,28 @@
                 width="800"
                 height="600"
                 tabindex="-1"
-                aria-label="BingBong playfield">
+                aria-label="Sân chơi BingBong">
         </canvas>
 
         <div id="readyMessage" class="game-message" role="status" hidden>
-            <h2>Ready to launch?</h2>
-            <p>Click inside the playfield or press <kbd>Space</kbd> to launch.</p>
-            <p class="game-message-hint">You can move the paddle before launching.</p>
+            <h2>Sẵn sàng phát bóng?</h2>
+            <p>Nhấp trong sân hoặc nhấn <kbd>Space</kbd> để phát bóng.</p>
+            <p class="game-message-hint">Bạn có thể di chuyển thanh đỡ trước khi phát bóng.</p>
         </div>
 
         <div id="pausedMessage" class="game-message game-message-paused" role="status" hidden>
-            <h2>Paused</h2>
-            <p>Press <kbd>C</kbd> to continue.</p>
-            <p class="game-message-hint">Press <kbd>M</kbd> to return to level select.</p>
+            <h2>Đã tạm dừng</h2>
+            <p>Nhấn <kbd>C</kbd> để tiếp tục.</p>
+            <p class="game-message-hint">Nhấn <kbd>M</kbd> để về màn hình chọn màn.</p>
         </div>
     </div>
 
     <p id="gameControls" class="game-controls" hidden>
-        <span>Move: mouse, <kbd>A</kbd> / <kbd>D</kbd> or <kbd>&larr;</kbd> / <kbd>&rarr;</kbd></span>
-        <span>Click / <kbd>Space</kbd> Launch</span>
-        <span><kbd>P</kbd> Pause</span>
-        <span><kbd>C</kbd> Continue</span>
-        <span><kbd>M</kbd> Level select</span>
+        <span>Di chuyển: chuột, <kbd>A</kbd>/<kbd>D</kbd> hoặc <kbd>&larr;</kbd>/<kbd>&rarr;</kbd></span>
+        <span>Nhấp / <kbd>Space</kbd> Phát bóng</span>
+        <span><kbd>P</kbd> Tạm dừng</span>
+        <span><kbd>C</kbd> Tiếp tục</span>
+        <span><kbd>M</kbd> Chọn màn</span>
     </p>
 </main>
 

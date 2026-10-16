@@ -10,14 +10,17 @@ function getThemeColor(property) {
 }
 
 const GAME_COLORS = Object.freeze({
-    paddle: getThemeColor("--color-accent"),
+    paddle: getThemeColor("--color-paddle"),
     ball: getThemeColor("--color-ball"),
+    ballHighlight: getThemeColor("--color-ball-highlight"),
+    ballShadow: getThemeColor("--color-ball-shadow"),
     text: getThemeColor("--color-text"),
     detail: getThemeColor("--color-ink"),
     border: getThemeColor("--color-border"),
     brickOneHit: getThemeColor("--color-brick-one-hit"),
     brickTwoHits: getThemeColor("--color-brick-two-hits"),
     brickThreeHits: getThemeColor("--color-brick-three-hits"),
+    brickLabel: getThemeColor("--color-brick-label"),
     explosiveBrick: getThemeColor("--color-explosive"),
     steelBrick: getThemeColor("--color-steel"),
     success: getThemeColor("--color-success"),
@@ -125,8 +128,8 @@ const ITEM_TYPES = Object.freeze({
 
 const ITEM_LABELS = Object.freeze({
     [ITEM_TYPES.EXTRA_LIFE]: "+1",
-    [ITEM_TYPES.EXPAND_PADDLE]: "W",
-    [ITEM_TYPES.SLOW_BALL]: "S"
+    [ITEM_TYPES.EXPAND_PADDLE]: "↔",
+    [ITEM_TYPES.SLOW_BALL]: "↓"
 });
 
 const ITEM_COLORS = Object.freeze({
@@ -156,15 +159,15 @@ const DEFAULT_BRICK_LAYOUT = Object.freeze([
 const LEVELS = Object.freeze([
     Object.freeze({
         id: 1,
-        name: "Classic Breakout",
-        description: "Learn the basics: keep the ball in play and break every brick.",
+        name: "Phá gạch cơ bản",
+        description: "Làm quen cách chơi: đỡ bóng và phá hết các viên gạch để qua màn.",
         brickLayout: DEFAULT_BRICK_LAYOUT
     }),
 
     Object.freeze({
         id: 2,
-        name: "Hard Shell",
-        description: "Tougher bricks need multiple hits. The number on each brick shows its remaining hits.",
+        name: "Lớp vỏ cứng",
+        description: "Gạch cứng cần nhiều lần chạm để phá. Con số trên gạch cho biết số lần chạm còn lại.",
 
         brickLayout: Object.freeze([
             Object.freeze([2, 2, 2, 2, 2, 2, 2]),
@@ -177,8 +180,8 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 3,
-        name: "Moving Formation",
-        description: "The brick formation moves from side to side. Follow the gaps and aim your shots.",
+        name: "Đội hình di động",
+        description: "Đội hình gạch di chuyển qua lại. Quan sát các khoảng trống và điều chỉnh hướng bóng.",
 
         brickLayout: Object.freeze([
             Object.freeze([0, 0, 3, 3, 3, 0, 0]),
@@ -196,8 +199,8 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 4,
-        name: "Item Rain",
-        description: "Catch falling items: +1 gives a life, W widens your paddle and S slows the ball.",
+        name: "Cơn mưa vật phẩm",
+        description: "Đón vật phẩm rơi: +1 thêm mạng, ↔ mở rộng thanh đỡ, ↓ làm chậm bóng.",
 
         brickLayout: DEFAULT_BRICK_LAYOUT,
 
@@ -212,8 +215,8 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 5,
-        name: "Explosive Chain",
-        description: "Break coral-red bricks marked with a star to damage nearby bricks and trigger chain reactions.",
+        name: "Vụ nổ dây chuyền",
+        description: "Phá gạch đỏ có dấu sao để gây sát thương lên gạch xung quanh và tạo vụ nổ dây chuyền.",
 
         brickLayout: Object.freeze([
             Object.freeze([1, 1, 1, 1, 1, 1, 1]),
@@ -234,8 +237,8 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 6,
-        name: "Multiball Chaos",
-        description: "Keep three balls in play. You only lose a life when all balls fall off the screen.",
+        name: "Thử thách nhiều bóng",
+        description: "Đỡ ba bóng cùng lúc. Bạn chỉ mất một mạng khi toàn bộ bóng rơi khỏi sân.",
 
         brickLayout: Object.freeze([
             Object.freeze([0, 1, 1, 2, 1, 1, 0]),
@@ -250,8 +253,8 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 7,
-        name: "Steel Fortress",
-        description: "Steel bricks with rivets cannot be destroyed. Clear all breakable bricks to win.",
+        name: "Pháo đài thép",
+        description: "Gạch thép có đinh tán không thể phá. Phá hết những viên gạch còn lại để qua màn.",
 
         brickLayout: Object.freeze([
             Object.freeze([1, 1, 2, 2, 2, 1, 1]),
@@ -285,22 +288,22 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 8,
-        name: "Power Battle",
-        description: "Preview only: the power battle mechanic is still in development. This level currently uses classic bricks.",
+        name: "Trận chiến sức mạnh",
+        description: "Bản chơi thử: cơ chế sức mạnh đang phát triển. Màn này hiện sử dụng bố cục gạch cơ bản.",
         inDevelopment: true
     }),
 
     Object.freeze({
         id: 9,
-        name: "Gravity Zone",
-        description: "Preview only: the gravity mechanic is still in development. This level currently uses classic bricks.",
+        name: "Vùng trọng lực",
+        description: "Bản chơi thử: cơ chế trọng lực đang phát triển. Màn này hiện sử dụng bố cục gạch cơ bản.",
         inDevelopment: true
     }),
 
     Object.freeze({
         id: 10,
-        name: "Final Boss",
-        description: "Preview only: the boss battle is still in development. This level currently uses classic bricks.",
+        name: "Trùm cuối",
+        description: "Bản chơi thử: trận đấu với trùm đang phát triển. Màn này hiện sử dụng bố cục gạch cơ bản.",
         inDevelopment: true
     })
 ]);
@@ -455,7 +458,7 @@ function createLevelMenu() {
 
         const number = document.createElement("span");
         number.className = "level-card-number";
-        number.textContent = `Level ${level.id}`;
+        number.textContent = `Màn ${level.id}`;
 
         const name = document.createElement("strong");
         name.className = "level-card-name";
@@ -468,7 +471,7 @@ function createLevelMenu() {
 
             const status = document.createElement("span");
             status.className = "level-card-status";
-            status.textContent = "In development";
+            status.textContent = "Đang phát triển";
             button.append(status);
         }
 
@@ -490,7 +493,7 @@ function selectMenuLevel(levelIndex) {
         button.classList.toggle("is-selected", index === levelIndex);
     }
 
-    levelMenu.title.textContent = `Level ${level.id}: ${level.name}`;
+    levelMenu.title.textContent = `Màn ${level.id}: ${level.name}`;
     levelMenu.description.textContent = level.description;
 }
 
@@ -1718,20 +1721,38 @@ function drawPaddle() {
 }
 
 function drawBall(ball) {
+    ctx.save();
+
+    const gradient = ctx.createRadialGradient(
+        ball.x - ball.radius * 0.35,
+        ball.y - ball.radius * 0.35,
+        0,
+        ball.x,
+        ball.y,
+        ball.radius
+    );
+    gradient.addColorStop(0, GAME_COLORS.ballHighlight);
+    gradient.addColorStop(0.55, GAME_COLORS.ball);
+    gradient.addColorStop(1, GAME_COLORS.ballShadow);
+
     ctx.beginPath();
 
     ctx.arc(
         ball.x,
         ball.y,
-        ball.radius,
+        ball.radius - 0.5,
         0,
         Math.PI * 2
     );
 
-    ctx.fillStyle = GAME_COLORS.ball;
+    ctx.fillStyle = gradient;
     ctx.fill();
+    ctx.strokeStyle = GAME_COLORS.ballShadow;
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
     ctx.closePath();
+    ctx.restore();
 }
 
 function drawBalls() {
@@ -1768,7 +1789,7 @@ function updateHud() {
     setHudText(hud.lives, lives);
     hud.lives.classList.toggle("is-low", lives <= 1);
     setHudText(hud.score, score);
-    setHudText(hud.levelNumber, `Level ${currentLevel.id} / ${LEVELS.length}`);
+    setHudText(hud.levelNumber, `Màn ${currentLevel.id} / ${LEVELS.length}`);
     setHudText(hud.levelName, currentLevel.name);
     setHudText(hud.bricks, getRemainingBreakableBrickCount());
     setHudText(hud.balls, balls.length);
@@ -1853,6 +1874,9 @@ function drawBrickDetails(brick) {
     }
 
     ctx.font = "bold 12px Arial";
+    ctx.fillStyle = brick.type === BRICK_TYPES.NORMAL
+        ? GAME_COLORS.brickLabel
+        : GAME_COLORS.detail;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(label, brick.x + brick.width / 2, brick.y + brick.height / 2);
@@ -1895,6 +1919,7 @@ function drawLevelComplete() {
 
     const currentLevel = getCurrentLevel();
 
+    const hasNextLevel = currentLevelIndex < LEVELS.length - 1;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
@@ -1911,7 +1936,7 @@ function drawLevelComplete() {
 
     ctx.font = "42px Arial";
     ctx.fillText(
-        "LEVEL COMPLETE!",
+        hasNextLevel ? "HOÀN THÀNH MÀN!" : "HOÀN THÀNH TRÒ CHƠI!",
         centerX,
         centerY - 35
     );
@@ -1926,14 +1951,14 @@ function drawLevelComplete() {
 
     ctx.font = "18px Arial";
     ctx.fillText(
-        `Score: ${score}`,
+        `Điểm: ${score}`,
         centerX,
         centerY + 50
     );
 
     ctx.font = "18px Arial";
     ctx.fillText(
-        "Press Enter to Continue",
+        hasNextLevel ? "Nhấn Enter để sang màn tiếp theo" : "Nhấn M để chọn màn khác",
         centerX,
         centerY + 90
     );
@@ -1957,14 +1982,14 @@ function drawGameOver(){
     ctx.textAlign = "center";
 
     ctx.font = "48px Arial";
-    ctx.fillText("Game Over!", centerX, centerY - 30);
+    ctx.fillText("BẠN ĐÃ THUA!", centerX, centerY - 30);
 
     ctx.fillStyle = GAME_COLORS.text;
     ctx.font = "20px Arial";
-    ctx.fillText(`Score: ${score}`, centerX, centerY + 20);
+    ctx.fillText(`Điểm: ${score}`, centerX, centerY + 20);
 
     ctx.font = "18px Arial";
-    ctx.fillText("Press R to Restart", centerX, centerY + 60);
+    ctx.fillText("Nhấn R để chơi lại", centerX, centerY + 60);
 
     ctx.textAlign = "left";
 }
