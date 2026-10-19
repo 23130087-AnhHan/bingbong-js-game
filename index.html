@@ -30,7 +30,8 @@
             Nhấn <kbd>M</kbd> để về đây khi đang chơi.<br>
             Nhấp trong sân hoặc nhấn <kbd>Space</kbd> (phím cách) để phát bóng.
             <kbd>P</kbd> tạm dừng; <kbd>C</kbd> tiếp tục.<br>
-            Vật phẩm: <strong>Xanh lá</strong> (có lợi: <strong>+1♥</strong> thêm mạng, <strong>↔</strong> dài thanh, <strong>↓</strong> chậm bóng, <strong>+1●/+2●</strong> thêm bóng); <strong>Đỏ</strong> (có hại: <strong>-1♥</strong> mất mạng, <strong>&gt;&lt;</strong> ngắn thanh, <strong>↑</strong> nhanh bóng).
+            Vật phẩm: <strong>Xanh lá</strong> (có lợi: <strong>+1♥</strong> thêm mạng, <strong>↔</strong> dài thanh, <strong>↓</strong> chậm bóng, <strong>+1●</strong> thêm bóng); <strong>Đỏ</strong> (có hại: <strong>-1♥</strong> mất mạng ở màn 7, <strong>&gt;&lt;</strong> ngắn thanh, <strong>↑</strong> nhanh bóng).<br>
+            Tối đa 2 bóng. Hiệu ứng xanh kéo dài 10 giây, hiệu ứng đỏ kéo dài 6 giây; thêm mạng và thêm bóng có tác dụng ngay.
         </p>
     </section>
 
@@ -56,6 +57,7 @@
             <span>Thời gian: <strong id="hudTime">00:00</strong></span>
             <span>Gạch còn lại: <strong id="hudBricks">35</strong></span>
             <span>Số bóng: <strong id="hudBalls">1</strong></span>
+            <span id="hudWallTimer" hidden></span>
             <span id="hudItemTimer" hidden>Hiệu ứng: <strong id="hudItemTimerValue"></strong></span>
         </div>
     </section>
