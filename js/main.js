@@ -52,7 +52,8 @@ const hud = {
     controls: document.getElementById("gameControls"),
     time: document.getElementById("hudTime"),
     itemTimer: document.getElementById("hudItemTimer"),
-    itemTimerValue: document.getElementById("hudItemTimerValue")
+    itemTimerValue: document.getElementById("hudItemTimerValue"),
+    wallTimer: document.getElementById("hudWallTimer")
 };
 
 
@@ -65,14 +66,15 @@ const PADDLE_BASE_WIDTH = 120;
 const PADDLE_EXPAND_AMOUNT = 40;
 const PADDLE_MAX_WIDTH = 200;
 const PADDLE_MIN_WIDTH = 70;
-const ITEM_EFFECT_DURATION = 12;
+const HELPFUL_EFFECT_DURATION = 10;
+const HARMFUL_EFFECT_DURATION = 6;
 
 
-const SLOW_BALL_MULTIPLIER = 0.75;
+const SLOW_BALL_MULTIPLIER = 0.85;
 const FAST_BALL_MULTIPLIER = 1.12;
 const MIN_BALL_SPEED = 220;
 const MAX_BALL_SPEED = 480;
-const MAX_ACTIVE_BALLS = 8;
+const MAX_ACTIVE_BALLS = 2;
 
 const PHYSICS_STEP = 1 / 120;
 const MAX_FRAME_TIME = 0.25;
@@ -174,6 +176,23 @@ const ITEM_COLORS = Object.freeze({
     [ITEM_TYPES.FAST_BALL]: "#dc2626"
 });
 
+const HARMFUL_ITEM_TYPES = Object.freeze([
+    ITEM_TYPES.LOSE_LIFE,
+    ITEM_TYPES.SHRINK_PADDLE,
+    ITEM_TYPES.FAST_BALL
+]);
+
+// Mạng và bóng bổ sung xuất hiện ít hơn các hiệu ứng tạm thời.
+const ITEM_WEIGHTS = Object.freeze({
+    [ITEM_TYPES.EXTRA_LIFE]: 1,
+    [ITEM_TYPES.EXPAND_PADDLE]: 3,
+    [ITEM_TYPES.SLOW_BALL]: 3,
+    [ITEM_TYPES.ADD_ONE_BALL]: 1,
+    [ITEM_TYPES.LOSE_LIFE]: 1,
+    [ITEM_TYPES.SHRINK_PADDLE]: 4,
+    [ITEM_TYPES.FAST_BALL]: 4
+});
+
 const ITEM_CONFIG = Object.freeze({
     width: 36,
     height: 22,
@@ -204,14 +223,14 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 2,
         name: "Lớp giáp kiên cố",
-        description: "Gạch giáp kiên cố cần nhiều lần chạm. Lớp ngoài bảo vệ cho lõi gạch 3 máu bên trong. Tốc độ bóng: 1.03x.",
+        description: "Tận dụng hai lối mở ở hàng dưới để đưa bóng vào nhóm gạch cứng bên trong. Tốc độ bóng: 1.03x.",
         speedMultiplier: 1.03,
         brickLayout: Object.freeze([
-            Object.freeze([1, 2, 3, 3, 3, 2, 1]),
+            Object.freeze([0, 1, 2, 3, 2, 1, 0]),
             Object.freeze([1, 2, 2, 3, 2, 2, 1]),
             Object.freeze([1, 1, 2, 2, 2, 1, 1]),
-            Object.freeze([0, 1, 1, 2, 1, 1, 0]),
-            Object.freeze([0, 0, 1, 1, 1, 0, 0])
+            Object.freeze([1, 2, 0, 2, 0, 2, 1]),
+            Object.freeze([1, 1, 0, 1, 0, 1, 1])
         ])
     }),
 
@@ -222,9 +241,9 @@ const LEVELS = Object.freeze([
         speedMultiplier: 1.06,
 
         brickLayout: Object.freeze([
-            Object.freeze([0, 0, 3, 3, 3, 0, 0]),
-            Object.freeze([0, 2, 2, 2, 2, 2, 0]),
-            Object.freeze([1, 1, 1, 1, 1, 1, 1]),
+            Object.freeze([0, 2, 3, 3, 3, 2, 0]),
+            Object.freeze([1, 2, 2, 2, 2, 2, 1]),
+            Object.freeze([1, 1, 2, 1, 2, 1, 1]),
             Object.freeze([0, 2, 2, 2, 2, 2, 0]),
             Object.freeze([0, 0, 1, 1, 1, 0, 0])
         ]),
@@ -238,15 +257,14 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 4,
         name: "Cơn mưa vật phẩm",
-        description: "Đội hình bọc giáp di chuyển. Thu thập vật phẩm xanh (có lợi) và né tránh vật phẩm đỏ (có hại). Tốc độ bóng: 1.09x.",
+        description: "Nhặt vật phẩm xanh và tránh vật phẩm đỏ khi gạch di chuyển. Tối đa hai bóng và một vật phẩm thêm mạng mỗi màn. Tốc độ bóng: 1.09x.",
         speedMultiplier: 1.09,
 
         brickLayout: Object.freeze([
-            Object.freeze([3, 3, 3, 3, 3, 3, 3]),
-            Object.freeze([2, 3, 2, 2, 2, 3, 2]),
-            Object.freeze([2, 2, 3, 1, 3, 2, 2]),
-            Object.freeze([1, 2, 2, 2, 2, 2, 1]),
-            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
+            Object.freeze([2, 3, 3, 3, 3, 3, 2]),
+            Object.freeze([2, 2, 3, 3, 3, 2, 2]),
+            Object.freeze([2, 2, 2, 3, 2, 2, 2]),
+            Object.freeze([1, 2, 2, 3, 2, 2, 1]),
             Object.freeze([1, 1, 1, 1, 1, 1, 1])
         ]),
 
@@ -255,7 +273,9 @@ const LEVELS = Object.freeze([
             maxOffsetX: 60
         }),
 
-        itemDropRate: 0.40,
+        itemDropRate: 0.22,
+        harmfulItemChance: 0.25,
+        extraLifeDropLimit: 1,
 
         itemTypes: Object.freeze([
             // Có lợi (Xanh lá)
@@ -263,10 +283,8 @@ const LEVELS = Object.freeze([
             ITEM_TYPES.EXPAND_PADDLE,
             ITEM_TYPES.SLOW_BALL,
             ITEM_TYPES.ADD_ONE_BALL,
-            ITEM_TYPES.ADD_TWO_BALLS,
 
             // Có hại (Đỏ)
-            ITEM_TYPES.LOSE_LIFE,
             ITEM_TYPES.SHRINK_PADDLE,
             ITEM_TYPES.FAST_BALL
         ])
@@ -275,16 +293,16 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 5,
         name: "Vụ nổ dây chuyền",
-        description: "Đội hình bọc giáp di chuyển. Kích nổ bom dọn gạch nhưng sẽ văng ra mảnh bom đỏ (vật phẩm có hại)! Hãy điều khiển thanh đỡ né tránh. Tốc độ: 1.12x.",
+        description: "Nhắm vào từng cụm gạch nổ để dọn đường và tránh vật phẩm đỏ rơi từ vụ nổ. Tốc độ bóng: 1.12x.",
         speedMultiplier: 1.12,
 
         brickLayout: Object.freeze([
             Object.freeze([3, 3, 3, 3, 3, 3, 3]),
-            Object.freeze([3, 2, 3, 3, 3, 2, 3]),
-            Object.freeze([2, 3, 2, 3, 2, 3, 2]),
-            Object.freeze([3, 2, 3, 2, 3, 2, 3]),
-            Object.freeze([2, 2, 3, 2, 3, 2, 2]),
-            Object.freeze([1, 2, 2, 2, 2, 2, 1])
+            Object.freeze([3, 1, 3, 3, 3, 1, 3]),
+            Object.freeze([2, 3, 3, 3, 3, 3, 2]),
+            Object.freeze([2, 1, 3, 3, 3, 1, 2]),
+            Object.freeze([1, 2, 2, 3, 2, 2, 1]),
+            Object.freeze([0, 1, 2, 2, 2, 1, 0])
         ]),
 
         formationMovement: Object.freeze({
@@ -295,12 +313,13 @@ const LEVELS = Object.freeze([
         explosiveCells: Object.freeze([
             Object.freeze([1, 1]),
             Object.freeze([1, 5]),
-            Object.freeze([2, 3]),
             Object.freeze([3, 1]),
             Object.freeze([3, 5])
         ]),
 
-        itemDropRate: 0.38,
+        itemDropRate: 0.23,
+        harmfulItemChance: 0.35,
+        extraLifeDropLimit: 1,
 
         itemTypes: Object.freeze([
             // Có lợi (Xanh lá)
@@ -308,10 +327,8 @@ const LEVELS = Object.freeze([
             ITEM_TYPES.EXPAND_PADDLE,
             ITEM_TYPES.SLOW_BALL,
             ITEM_TYPES.ADD_ONE_BALL,
-            ITEM_TYPES.ADD_TWO_BALLS,
 
             // Có hại (Đỏ)
-            ITEM_TYPES.LOSE_LIFE,
             ITEM_TYPES.SHRINK_PADDLE,
             ITEM_TYPES.FAST_BALL
         ])
@@ -320,16 +337,17 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 6,
         name: "Bức tường hạ dần",
-        description: "Hàng gạch liên tục trượt ngang và tụt dần xuống sau mỗi 16 giây. Kèm gạch nổ và vật phẩm. Tốc độ: 1.16x.",
+        description: "Tường gạch hạ 18 px mỗi 12 giây. Theo dõi đếm ngược và phá gạch trước khi khoảng phản ứng thu hẹp. Không có vật phẩm thêm mạng. Tốc độ bóng: 1.16x.",
         speedMultiplier: 1.16,
+        paddleWidth: 110,
 
         brickLayout: Object.freeze([
             Object.freeze([3, 3, 3, 3, 3, 3, 3]),
-            Object.freeze([2, 3, 3, 2, 3, 3, 2]),
+            Object.freeze([3, 3, 3, 3, 3, 3, 3]),
+            Object.freeze([2, 3, 3, 3, 3, 3, 2]),
             Object.freeze([2, 2, 3, 3, 3, 2, 2]),
             Object.freeze([1, 2, 2, 3, 2, 2, 1]),
-            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
-            Object.freeze([1, 1, 1, 2, 1, 1, 1])
+            Object.freeze([0, 2, 2, 2, 2, 2, 0])
         ]),
 
         formationMovement: Object.freeze({
@@ -338,31 +356,27 @@ const LEVELS = Object.freeze([
         }),
 
         descendingWall: Object.freeze({
-            stepInterval: 16,
+            stepInterval: 12,
             stepDistance: 18,
-            maxOffsetY: 150
+            maxOffsetY: 126
         }),
 
         explosiveCells: Object.freeze([
             Object.freeze([1, 2]),
-            Object.freeze([1, 4]),
-            Object.freeze([3, 3]),
-            Object.freeze([4, 1]),
-            Object.freeze([4, 5])
+            Object.freeze([4, 4])
         ]),
 
-        itemDropRate: 0.40,
+        itemDropRate: 0.24,
+        harmfulItemChance: 0.40,
+        extraLifeDropLimit: 0,
 
         itemTypes: Object.freeze([
             // Có lợi (Xanh lá)
-            ITEM_TYPES.EXTRA_LIFE,
             ITEM_TYPES.EXPAND_PADDLE,
             ITEM_TYPES.SLOW_BALL,
             ITEM_TYPES.ADD_ONE_BALL,
-            ITEM_TYPES.ADD_TWO_BALLS,
 
             // Có hại (Đỏ)
-            ITEM_TYPES.LOSE_LIFE,
             ITEM_TYPES.SHRINK_PADDLE,
             ITEM_TYPES.FAST_BALL
         ])
@@ -371,20 +385,22 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 7,
         name: "Pháo đài thép",
-        description: "Đỉnh cao chiến trường: Pháo đài thép di động kết hợp bom và vật phẩm rơi. Tận dụng gạch nổ để dọn sạch gạch thường! Tốc độ: 1.20x.",
+        description: "Đưa bóng qua các lối mở của pháo đài thép di động. Thanh đỡ hẹp hơn, ít bom và có vật phẩm trừ mạng. Tốc độ bóng: 1.20x.",
         speedMultiplier: 1.20,
+        paddleWidth: 100,
 
         brickLayout: Object.freeze([
-            Object.freeze([2, 3, 3, 3, 3, 3, 2]),
-            Object.freeze([2, 2, 3, 2, 3, 2, 2]),
-            Object.freeze([1, 2, 2, 2, 2, 2, 1]),
-            Object.freeze([1, 2, 3, 2, 3, 2, 1]),
-            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
-            Object.freeze([0, 1, 1, 2, 1, 1, 0])
+            Object.freeze([3, 3, 3, 3, 3, 3, 3]),
+            Object.freeze([3, 3, 3, 1, 3, 3, 3]),
+            Object.freeze([3, 3, 0, 3, 0, 3, 3]),
+            Object.freeze([1, 3, 3, 3, 3, 3, 1]),
+            Object.freeze([3, 3, 3, 1, 3, 3, 3]),
+            Object.freeze([0, 2, 3, 3, 3, 2, 0]),
+            Object.freeze([0, 2, 2, 2, 2, 2, 0])
         ]),
 
         formationMovement: Object.freeze({
-            speed: 80,
+            speed: 90,
             maxOffsetX: 60
         }),
 
@@ -398,20 +414,18 @@ const LEVELS = Object.freeze([
 
         explosiveCells: Object.freeze([
             Object.freeze([1, 3]),
-            Object.freeze([2, 1]),
-            Object.freeze([2, 5]),
             Object.freeze([4, 3])
         ]),
 
-        itemDropRate: 0.42,
+        itemDropRate: 0.25,
+        harmfulItemChance: 0.45,
+        extraLifeDropLimit: 0,
 
         itemTypes: Object.freeze([
             // Có lợi (Xanh lá)
-            ITEM_TYPES.EXTRA_LIFE,
             ITEM_TYPES.EXPAND_PADDLE,
             ITEM_TYPES.SLOW_BALL,
             ITEM_TYPES.ADD_ONE_BALL,
-            ITEM_TYPES.ADD_TWO_BALLS,
 
             // Có hại (Đỏ)
             ITEM_TYPES.LOSE_LIFE,
@@ -457,6 +471,7 @@ let brickFormationDirection = 1;
 let brickFormationOffsetY = 0;
 let brickDescendTimer = 0;
 let items = [];
+let extraLifeDrops = 0;
 let levelTime = 0;
 let paddleEffectTimer = 0;
 let paddleEffectType = null;
@@ -842,7 +857,7 @@ function resetPaddleWidth() {
 }
 
 function applyExpandPaddleEffect() {
-    paddleEffectTimer = ITEM_EFFECT_DURATION;
+    paddleEffectTimer = HELPFUL_EFFECT_DURATION;
     paddleEffectType = ITEM_TYPES.EXPAND_PADDLE;
     const targetWidth = Math.min(
         getBasePaddleWidth() + PADDLE_EXPAND_AMOUNT,
@@ -852,7 +867,7 @@ function applyExpandPaddleEffect() {
 }
 
 function applyShrinkPaddleEffect() {
-    paddleEffectTimer = ITEM_EFFECT_DURATION;
+    paddleEffectTimer = HARMFUL_EFFECT_DURATION;
     paddleEffectType = ITEM_TYPES.SHRINK_PADDLE;
     const targetWidth = Math.max(
         getBasePaddleWidth() - PADDLE_EXPAND_AMOUNT,
@@ -915,7 +930,7 @@ function updateItemTimers(deltaTime) {
 }
 
 function applySlowBallEffect() {
-    ballEffectTimer = ITEM_EFFECT_DURATION;
+    ballEffectTimer = HELPFUL_EFFECT_DURATION;
     ballEffectType = ITEM_TYPES.SLOW_BALL;
     const targetSpeed = Math.max(
         MIN_BALL_SPEED,
@@ -927,7 +942,7 @@ function applySlowBallEffect() {
 }
 
 function applyFastBallEffect() {
-    ballEffectTimer = ITEM_EFFECT_DURATION;
+    ballEffectTimer = HARMFUL_EFFECT_DURATION;
     ballEffectType = ITEM_TYPES.FAST_BALL;
     const targetSpeed = Math.min(
         MAX_BALL_SPEED,
@@ -949,7 +964,7 @@ function spawnExtraBalls(count) {
     const sourceBall = balls[0];
     const currentSpeed =
         Math.hypot(sourceBall.velocityX, sourceBall.velocityY) ||
-        (BALL_INITIAL_VELOCITY_X * getLevelSpeedMultiplier());
+        getBaseBallSpeed();
     const baseAngle = Math.atan2(sourceBall.velocityX, -sourceBall.velocityY);
 
     for (let i = 0; i < spawnCount; i++) {
@@ -960,14 +975,15 @@ function spawnExtraBalls(count) {
         const velocityX = currentSpeed * Math.sin(angle);
         const velocityY = -currentSpeed * Math.cos(angle);
 
-        balls.push(
-            createBall(
-                sourceBall.x,
-                sourceBall.y,
-                velocityX,
-                velocityY
-            )
+        const newBall = createBall(
+            sourceBall.x,
+            sourceBall.y,
+            velocityX,
+            velocityY
         );
+        // Bóng mới cũng cần góc bay đủ dốc để không trôi ngang quá lâu.
+        limitBallAngle(newBall, 0, 0);
+        balls.push(newBall);
     }
 
     updateHud();
@@ -1372,12 +1388,33 @@ function getBrickTypeForCell(
 }
 
 function getRandomItemType(itemTypes) {
-    const randomIndex =
-        Math.floor(
-            Math.random() * itemTypes.length
-        );
+    // Trong cùng một nhóm, trọng số lớn hơn có cơ hội được chọn cao hơn.
+    const totalWeight = itemTypes.reduce(
+        (total, type) => total + ITEM_WEIGHTS[type],
+        0
+    );
+    let randomWeight = Math.random() * totalWeight;
 
-    return itemTypes[randomIndex];
+    for (const type of itemTypes) {
+        randomWeight -= ITEM_WEIGHTS[type];
+        if (randomWeight < 0) {
+            return type;
+        }
+    }
+
+    return itemTypes[itemTypes.length - 1];
+}
+
+function canDropItem(type) {
+    if (type === ITEM_TYPES.EXTRA_LIFE) {
+        return lives < MAX_LIVES && extraLifeDrops < getCurrentLevel().extraLifeDropLimit;
+    }
+
+    if (type === ITEM_TYPES.ADD_ONE_BALL) {
+        return balls.length < MAX_ACTIVE_BALLS;
+    }
+
+    return true;
 }
 
 function tryDropItem(brick) {
@@ -1413,8 +1450,21 @@ function tryDropItem(brick) {
         return;
     }
 
-    const type =
-        getRandomItemType(itemTypes);
+    const availableTypes = itemTypes.filter(canDropItem);
+    if (availableTypes.length === 0) {
+        return;
+    }
+
+    // Chọn nhóm trước, rồi chọn vật phẩm để kiểm soát lượng trợ giúp mỗi màn.
+    const dropHarmfulItem = Math.random() < currentLevel.harmfulItemChance;
+    const groupTypes = availableTypes.filter(
+        type => HARMFUL_ITEM_TYPES.includes(type) === dropHarmfulItem
+    );
+    const type = getRandomItemType(groupTypes.length > 0 ? groupTypes : availableTypes);
+
+    if (type === ITEM_TYPES.EXTRA_LIFE) {
+        extraLifeDrops++;
+    }
 
     items.push({
         type,
@@ -1443,6 +1493,7 @@ function resetBricks() {
 
 function resetItems() {
     items = [];
+    extraLifeDrops = 0;
 }
 
 function resetPaddleInput() {
@@ -1740,13 +1791,11 @@ function handleBrickDestroyed(brick) {
 }
 
 function dropHarmfulItemFromExplosion(sourceBrick) {
-    const debuffTypes = [
-        ITEM_TYPES.LOSE_LIFE,
-        ITEM_TYPES.SHRINK_PADDLE,
-        ITEM_TYPES.FAST_BALL
-    ];
+    const debuffTypes = getCurrentLevel().itemTypes.filter(
+        type => HARMFUL_ITEM_TYPES.includes(type)
+    );
 
-    const type = debuffTypes[Math.floor(Math.random() * debuffTypes.length)];
+    const type = getRandomItemType(debuffTypes);
 
     items.push({
         type,
@@ -1892,6 +1941,11 @@ function updateItems(deltaTime) {
             isItemCollidingWithPaddle(item)
         ) {
             applyItemEffect(item.type);
+            // Dừng ngay nếu vật phẩm trừ mạng đã kết thúc ván chơi.
+            if (gameState === GAME_STATES.GAME_OVER) {
+                items = [];
+                return;
+            }
             continue;
         }
 
@@ -1943,18 +1997,15 @@ function updateBrickFormation(deltaTime) {
         }
     }
 
-    if (descending) {
+    if (descending && brickFormationOffsetY < descending.maxOffsetY) {
         brickDescendTimer += deltaTime;
-        if (brickDescendTimer >= descending.stepInterval) {
-            brickDescendTimer = 0;
-            const maxOffsetY =
-                typeof descending.maxOffsetY === "number"
-                    ? descending.maxOffsetY
-                    : 160;
-
-            if (brickFormationOffsetY < maxOffsetY) {
-                brickFormationOffsetY += descending.stepDistance;
-            }
+        while (brickDescendTimer >= descending.stepInterval &&
+               brickFormationOffsetY < descending.maxOffsetY) {
+            brickDescendTimer -= descending.stepInterval;
+            brickFormationOffsetY = Math.min(
+                descending.maxOffsetY,
+                brickFormationOffsetY + descending.stepDistance
+            );
         }
     }
 
@@ -2194,6 +2245,15 @@ function updateHud() {
     setHudText(hud.levelName, currentLevel.name);
     setHudText(hud.bricks, getRemainingBreakableBrickCount());
     setHudText(hud.balls, balls.length);
+
+    const descendingWall = getCurrentDescendingWall();
+    hud.wallTimer.hidden = !descendingWall;
+    if (descendingWall) {
+        const hasStopped = brickFormationOffsetY >= descendingWall.maxOffsetY;
+        const remaining = Math.ceil(descendingWall.stepInterval - brickDescendTimer);
+        setHudText(hud.wallTimer, hasStopped ? "Tường hạ: đã dừng" : `Tường hạ: ${remaining}s`);
+        hud.wallTimer.classList.toggle("is-warning", !hasStopped && remaining <= 2);
+    }
 
     if (hud.time) {
         setHudText(hud.time, formatTime(levelTime));
