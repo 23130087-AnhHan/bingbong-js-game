@@ -21,6 +21,10 @@
     --color-brick-label: #fff7ed;
     --color-explosive: #f87171;
     --color-steel: #94a3b8;
+    --color-core-shield: #0369a1;
+    --color-core-open: #15803d;
+    --color-switch: #6d28d9;
+    --color-switch-active: #15803d;
     --color-item-life: #4ade80;
     --color-item-expand: #7dd3fc;
     --color-item-slow: #a78bfa;
@@ -256,6 +260,27 @@ body {
 #hudWallTimer.is-warning {
     color: var(--color-danger);
     font-weight: 700;
+}
+
+.core-objective {
+    margin: 8px 0 0;
+    padding: 6px 10px;
+    border: 1px solid var(--color-core-shield);
+    background-color: var(--color-surface-selected);
+    color: var(--color-core-shield);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.core-objective.is-open {
+    border-color: var(--color-success);
+    background-color: var(--color-surface);
+    color: var(--color-success);
+}
+
+.core-objective.is-warning {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
 }
 
 
