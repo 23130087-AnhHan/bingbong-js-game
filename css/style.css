@@ -244,6 +244,15 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
+#hudItemTimer {
+    color: var(--color-accent);
+}
+
+#hudItemTimer strong {
+    color: var(--color-ink);
+}
+
+
 .game-board {
     position: relative;
 }

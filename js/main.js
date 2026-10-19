@@ -49,7 +49,10 @@ const hud = {
     levelName: document.getElementById("hudLevelName"),
     bricks: document.getElementById("hudBricks"),
     balls: document.getElementById("hudBalls"),
-    controls: document.getElementById("gameControls")
+    controls: document.getElementById("gameControls"),
+    time: document.getElementById("hudTime"),
+    itemTimer: document.getElementById("hudItemTimer"),
+    itemTimerValue: document.getElementById("hudItemTimerValue")
 };
 
 
@@ -61,9 +64,15 @@ const MAX_LIVES = 5;
 const PADDLE_BASE_WIDTH = 120;
 const PADDLE_EXPAND_AMOUNT = 40;
 const PADDLE_MAX_WIDTH = 200;
+const PADDLE_MIN_WIDTH = 70;
+const ITEM_EFFECT_DURATION = 12;
+
 
 const SLOW_BALL_MULTIPLIER = 0.75;
+const FAST_BALL_MULTIPLIER = 1.12;
 const MIN_BALL_SPEED = 220;
+const MAX_BALL_SPEED = 480;
+const MAX_ACTIVE_BALLS = 8;
 
 const PHYSICS_STEP = 1 / 120;
 const MAX_FRAME_TIME = 0.25;
@@ -101,7 +110,7 @@ const paddle = {
     x: 0,
     y: canvas.height - 40,
 
-    speed: 420,
+    speed: 480,
 
     moveLeft: false,
     moveRight: false,
@@ -126,25 +135,47 @@ const GAME_STATES = Object.freeze({
 });
 
 const ITEM_TYPES = Object.freeze({
+    // Có lợi (Buffs - Xanh lá)
     EXTRA_LIFE: "extraLife",
     EXPAND_PADDLE: "expandPaddle",
-    SLOW_BALL: "slowBall"
+    SLOW_BALL: "slowBall",
+    ADD_ONE_BALL: "addOneBall",
+    ADD_TWO_BALLS: "addTwoBalls",
+
+    // Có hại (Debuffs - Đỏ)
+    LOSE_LIFE: "loseLife",
+    SHRINK_PADDLE: "shrinkPaddle",
+    FAST_BALL: "fastBall"
 });
 
 const ITEM_LABELS = Object.freeze({
-    [ITEM_TYPES.EXTRA_LIFE]: "+1",
-    [ITEM_TYPES.EXPAND_PADDLE]: "↔",
-    [ITEM_TYPES.SLOW_BALL]: "↓"
+    [ITEM_TYPES.EXTRA_LIFE]: "+1\u2665",
+    [ITEM_TYPES.EXPAND_PADDLE]: "\u2194",
+    [ITEM_TYPES.SLOW_BALL]: "\u2193",
+    [ITEM_TYPES.ADD_ONE_BALL]: "+1\u25cf",
+    [ITEM_TYPES.ADD_TWO_BALLS]: "+2\u25cf",
+
+    [ITEM_TYPES.LOSE_LIFE]: "-1\u2665",
+    [ITEM_TYPES.SHRINK_PADDLE]: "><",
+    [ITEM_TYPES.FAST_BALL]: "\u2191"
 });
 
 const ITEM_COLORS = Object.freeze({
-    [ITEM_TYPES.EXTRA_LIFE]: getThemeColor("--color-item-life"),
-    [ITEM_TYPES.EXPAND_PADDLE]: getThemeColor("--color-item-expand"),
-    [ITEM_TYPES.SLOW_BALL]: getThemeColor("--color-item-slow")
+    // Có lợi: Xanh lá cây
+    [ITEM_TYPES.EXTRA_LIFE]: "#16a34a",
+    [ITEM_TYPES.EXPAND_PADDLE]: "#16a34a",
+    [ITEM_TYPES.SLOW_BALL]: "#16a34a",
+    [ITEM_TYPES.ADD_ONE_BALL]: "#16a34a",
+    [ITEM_TYPES.ADD_TWO_BALLS]: "#16a34a",
+
+    // Có hại: Đỏ
+    [ITEM_TYPES.LOSE_LIFE]: "#dc2626",
+    [ITEM_TYPES.SHRINK_PADDLE]: "#dc2626",
+    [ITEM_TYPES.FAST_BALL]: "#dc2626"
 });
 
 const ITEM_CONFIG = Object.freeze({
-    width: 30,
+    width: 36,
     height: 22,
     fallSpeed: 140
 });
@@ -166,19 +197,20 @@ const LEVELS = Object.freeze([
         id: 1,
         name: "Phá gạch cơ bản",
         description: "Làm quen cách chơi: đỡ bóng và phá hết các viên gạch để qua màn.",
+        speedMultiplier: 1.0,
         brickLayout: DEFAULT_BRICK_LAYOUT
     }),
 
     Object.freeze({
         id: 2,
-        name: "Lớp vỏ cứng",
-        description: "Gạch cứng cần nhiều lần chạm để phá. Con số trên gạch cho biết số lần chạm còn lại.",
-
+        name: "Lớp giáp kiên cố",
+        description: "Gạch giáp kiên cố cần nhiều lần chạm. Lớp ngoài bảo vệ cho lõi gạch 3 máu bên trong. Tốc độ bóng: 1.03x.",
+        speedMultiplier: 1.03,
         brickLayout: Object.freeze([
-            Object.freeze([2, 2, 2, 2, 2, 2, 2]),
-            Object.freeze([2, 2, 2, 2, 2, 2, 2]),
-            Object.freeze([0, 2, 2, 2, 2, 2, 0]),
-            Object.freeze([0, 1, 1, 1, 1, 1, 0]),
+            Object.freeze([1, 2, 3, 3, 3, 2, 1]),
+            Object.freeze([1, 2, 2, 3, 2, 2, 1]),
+            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
+            Object.freeze([0, 1, 1, 2, 1, 1, 0]),
             Object.freeze([0, 0, 1, 1, 1, 0, 0])
         ])
     }),
@@ -186,7 +218,8 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 3,
         name: "Đội hình di động",
-        description: "Đội hình gạch di chuyển qua lại. Quan sát các khoảng trống và điều chỉnh hướng bóng.",
+        description: "Đội hình gạch liên tục di chuyển qua lại. Căn thời điểm và điều chỉnh hướng bóng chính xác. Tốc độ bóng: 1.06x.",
+        speedMultiplier: 1.06,
 
         brickLayout: Object.freeze([
             Object.freeze([0, 0, 3, 3, 3, 0, 0]),
@@ -197,7 +230,7 @@ const LEVELS = Object.freeze([
         ]),
 
         formationMovement: Object.freeze({
-            speed: 70,
+            speed: 75,
             maxOffsetX: 70
         })
     }),
@@ -205,31 +238,59 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 4,
         name: "Cơn mưa vật phẩm",
-        description: "Đón vật phẩm rơi: +1 thêm mạng, ↔ mở rộng thanh đỡ, ↓ làm chậm bóng.",
+        description: "Đội hình bọc giáp di chuyển. Thu thập vật phẩm xanh (có lợi) và né tránh vật phẩm đỏ (có hại). Tốc độ bóng: 1.09x.",
+        speedMultiplier: 1.09,
 
-        brickLayout: DEFAULT_BRICK_LAYOUT,
+        brickLayout: Object.freeze([
+            Object.freeze([3, 3, 3, 3, 3, 3, 3]),
+            Object.freeze([2, 3, 2, 2, 2, 3, 2]),
+            Object.freeze([2, 2, 3, 1, 3, 2, 2]),
+            Object.freeze([1, 2, 2, 2, 2, 2, 1]),
+            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
+            Object.freeze([1, 1, 1, 1, 1, 1, 1])
+        ]),
 
-        itemDropRate: 0.35,
+        formationMovement: Object.freeze({
+            speed: 75,
+            maxOffsetX: 60
+        }),
+
+        itemDropRate: 0.40,
 
         itemTypes: Object.freeze([
+            // Có lợi (Xanh lá)
             ITEM_TYPES.EXTRA_LIFE,
             ITEM_TYPES.EXPAND_PADDLE,
-            ITEM_TYPES.SLOW_BALL
+            ITEM_TYPES.SLOW_BALL,
+            ITEM_TYPES.ADD_ONE_BALL,
+            ITEM_TYPES.ADD_TWO_BALLS,
+
+            // Có hại (Đỏ)
+            ITEM_TYPES.LOSE_LIFE,
+            ITEM_TYPES.SHRINK_PADDLE,
+            ITEM_TYPES.FAST_BALL
         ])
     }),
 
     Object.freeze({
         id: 5,
         name: "Vụ nổ dây chuyền",
-        description: "Phá gạch đỏ có dấu sao để gây sát thương lên gạch xung quanh và tạo vụ nổ dây chuyền.",
+        description: "Đội hình bọc giáp di chuyển. Kích nổ bom dọn gạch nhưng sẽ văng ra mảnh bom đỏ (vật phẩm có hại)! Hãy điều khiển thanh đỡ né tránh. Tốc độ: 1.12x.",
+        speedMultiplier: 1.12,
 
         brickLayout: Object.freeze([
-            Object.freeze([1, 1, 1, 1, 1, 1, 1]),
-            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
-            Object.freeze([1, 2, 1, 1, 1, 2, 1]),
-            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
-            Object.freeze([1, 1, 1, 1, 1, 1, 1])
+            Object.freeze([3, 3, 3, 3, 3, 3, 3]),
+            Object.freeze([3, 2, 3, 3, 3, 2, 3]),
+            Object.freeze([2, 3, 2, 3, 2, 3, 2]),
+            Object.freeze([3, 2, 3, 2, 3, 2, 3]),
+            Object.freeze([2, 2, 3, 2, 3, 2, 2]),
+            Object.freeze([1, 2, 2, 2, 2, 2, 1])
         ]),
+
+        formationMovement: Object.freeze({
+            speed: 80,
+            maxOffsetX: 65
+        }),
 
         explosiveCells: Object.freeze([
             Object.freeze([1, 1]),
@@ -237,57 +298,125 @@ const LEVELS = Object.freeze([
             Object.freeze([2, 3]),
             Object.freeze([3, 1]),
             Object.freeze([3, 5])
+        ]),
+
+        itemDropRate: 0.38,
+
+        itemTypes: Object.freeze([
+            // Có lợi (Xanh lá)
+            ITEM_TYPES.EXTRA_LIFE,
+            ITEM_TYPES.EXPAND_PADDLE,
+            ITEM_TYPES.SLOW_BALL,
+            ITEM_TYPES.ADD_ONE_BALL,
+            ITEM_TYPES.ADD_TWO_BALLS,
+
+            // Có hại (Đỏ)
+            ITEM_TYPES.LOSE_LIFE,
+            ITEM_TYPES.SHRINK_PADDLE,
+            ITEM_TYPES.FAST_BALL
         ])
     }),
 
     Object.freeze({
         id: 6,
-        name: "Thử thách nhiều bóng",
-        description: "Đỡ ba bóng cùng lúc. Bạn chỉ mất một mạng khi toàn bộ bóng rơi khỏi sân.",
+        name: "Bức tường hạ dần",
+        description: "Hàng gạch liên tục trượt ngang và tụt dần xuống sau mỗi 16 giây. Kèm gạch nổ và vật phẩm. Tốc độ: 1.16x.",
+        speedMultiplier: 1.16,
 
         brickLayout: Object.freeze([
-            Object.freeze([0, 1, 1, 2, 1, 1, 0]),
+            Object.freeze([3, 3, 3, 3, 3, 3, 3]),
+            Object.freeze([2, 3, 3, 2, 3, 3, 2]),
+            Object.freeze([2, 2, 3, 3, 3, 2, 2]),
+            Object.freeze([1, 2, 2, 3, 2, 2, 1]),
             Object.freeze([1, 1, 2, 2, 2, 1, 1]),
-            Object.freeze([1, 2, 1, 3, 1, 2, 1]),
-            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
-            Object.freeze([0, 1, 1, 2, 1, 1, 0])
+            Object.freeze([1, 1, 1, 2, 1, 1, 1])
         ]),
 
-        initialBallCount: 3
+        formationMovement: Object.freeze({
+            speed: 85,
+            maxOffsetX: 65
+        }),
+
+        descendingWall: Object.freeze({
+            stepInterval: 16,
+            stepDistance: 18,
+            maxOffsetY: 150
+        }),
+
+        explosiveCells: Object.freeze([
+            Object.freeze([1, 2]),
+            Object.freeze([1, 4]),
+            Object.freeze([3, 3]),
+            Object.freeze([4, 1]),
+            Object.freeze([4, 5])
+        ]),
+
+        itemDropRate: 0.40,
+
+        itemTypes: Object.freeze([
+            // Có lợi (Xanh lá)
+            ITEM_TYPES.EXTRA_LIFE,
+            ITEM_TYPES.EXPAND_PADDLE,
+            ITEM_TYPES.SLOW_BALL,
+            ITEM_TYPES.ADD_ONE_BALL,
+            ITEM_TYPES.ADD_TWO_BALLS,
+
+            // Có hại (Đỏ)
+            ITEM_TYPES.LOSE_LIFE,
+            ITEM_TYPES.SHRINK_PADDLE,
+            ITEM_TYPES.FAST_BALL
+        ])
     }),
 
     Object.freeze({
         id: 7,
         name: "Pháo đài thép",
-        description: "Gạch thép có đinh tán không thể phá. Phá hết những viên gạch còn lại để qua màn.",
+        description: "Đỉnh cao chiến trường: Pháo đài thép di động kết hợp bom và vật phẩm rơi. Tận dụng gạch nổ để dọn sạch gạch thường! Tốc độ: 1.20x.",
+        speedMultiplier: 1.20,
 
         brickLayout: Object.freeze([
+            Object.freeze([2, 3, 3, 3, 3, 3, 2]),
+            Object.freeze([2, 2, 3, 2, 3, 2, 2]),
+            Object.freeze([1, 2, 2, 2, 2, 2, 1]),
+            Object.freeze([1, 2, 3, 2, 3, 2, 1]),
             Object.freeze([1, 1, 2, 2, 2, 1, 1]),
-            Object.freeze([1, 2, 1, 2, 1, 2, 1]),
-            Object.freeze([1, 1, 2, 3, 2, 1, 1]),
-            Object.freeze([1, 2, 1, 2, 1, 2, 1]),
-            Object.freeze([1, 1, 2, 2, 2, 1, 1])
+            Object.freeze([0, 1, 1, 2, 1, 1, 0])
         ]),
 
+        formationMovement: Object.freeze({
+            speed: 80,
+            maxOffsetX: 60
+        }),
+
         steelCells: Object.freeze([
-            Object.freeze([0, 0]),
-            Object.freeze([0, 6]),
-
-            Object.freeze([1, 0]),
-            Object.freeze([1, 2]),
-            Object.freeze([1, 4]),
-            Object.freeze([1, 6]),
-
-            Object.freeze([2, 0]),
-            Object.freeze([2, 6]),
-
+            Object.freeze([0, 1]),
+            Object.freeze([0, 5]),
+            Object.freeze([2, 3]),
             Object.freeze([3, 0]),
-            Object.freeze([3, 2]),
-            Object.freeze([3, 4]),
-            Object.freeze([3, 6]),
+            Object.freeze([3, 6])
+        ]),
 
-            Object.freeze([4, 0]),
-            Object.freeze([4, 6])
+        explosiveCells: Object.freeze([
+            Object.freeze([1, 3]),
+            Object.freeze([2, 1]),
+            Object.freeze([2, 5]),
+            Object.freeze([4, 3])
+        ]),
+
+        itemDropRate: 0.42,
+
+        itemTypes: Object.freeze([
+            // Có lợi (Xanh lá)
+            ITEM_TYPES.EXTRA_LIFE,
+            ITEM_TYPES.EXPAND_PADDLE,
+            ITEM_TYPES.SLOW_BALL,
+            ITEM_TYPES.ADD_ONE_BALL,
+            ITEM_TYPES.ADD_TWO_BALLS,
+
+            // Có hại (Đỏ)
+            ITEM_TYPES.LOSE_LIFE,
+            ITEM_TYPES.SHRINK_PADDLE,
+            ITEM_TYPES.FAST_BALL
         ])
     }),
 
@@ -325,7 +454,15 @@ let bricks = [];
 let balls = [];
 let brickFormationOffsetX = 0;
 let brickFormationDirection = 1;
+let brickFormationOffsetY = 0;
+let brickDescendTimer = 0;
 let items = [];
+let levelTime = 0;
+let paddleEffectTimer = 0;
+let paddleEffectType = null;
+let ballEffectTimer = 0;
+let ballEffectType = null;
+
 
 window.addEventListener("keydown", (event) => {
     if (
@@ -671,24 +808,57 @@ function applyExtraLifeEffect() {
         lives + 1,
         MAX_LIVES
     );
+    updateHud();
+}
+
+function applyLoseLifeEffect() {
+    lives--;
+    if (lives <= 0) {
+        lives = 0;
+        gameState = GAME_STATES.GAME_OVER;
+        return;
+    }
+    updateHud();
+}
+
+function getBasePaddleWidth() {
+    const currentLevel = typeof getCurrentLevel === "function" ? getCurrentLevel() : null;
+    return (currentLevel && typeof currentLevel.paddleWidth === "number" && currentLevel.paddleWidth > 0)
+        ? currentLevel.paddleWidth
+        : PADDLE_BASE_WIDTH;
+}
+
+function setPaddleWidth(newWidth) {
+    const paddleCenter = paddle.x + paddle.width / 2;
+    paddle.width = newWidth;
+    paddle.x = paddleCenter - paddle.width / 2;
+    clampPaddleToCanvas();
+}
+
+function resetPaddleWidth() {
+    setPaddleWidth(getBasePaddleWidth());
+    paddleEffectTimer = 0;
+    paddleEffectType = null;
 }
 
 function applyExpandPaddleEffect() {
-    const paddleCenter =
-        paddle.x + paddle.width / 2;
+    paddleEffectTimer = ITEM_EFFECT_DURATION;
+    paddleEffectType = ITEM_TYPES.EXPAND_PADDLE;
+    const targetWidth = Math.min(
+        getBasePaddleWidth() + PADDLE_EXPAND_AMOUNT,
+        PADDLE_MAX_WIDTH
+    );
+    setPaddleWidth(targetWidth);
+}
 
-    paddle.width =
-        Math.min(
-            paddle.width +
-            PADDLE_EXPAND_AMOUNT,
-            PADDLE_MAX_WIDTH
-        );
-
-    paddle.x =
-        paddleCenter -
-        paddle.width / 2;
-
-    clampPaddleToCanvas();
+function applyShrinkPaddleEffect() {
+    paddleEffectTimer = ITEM_EFFECT_DURATION;
+    paddleEffectType = ITEM_TYPES.SHRINK_PADDLE;
+    const targetWidth = Math.max(
+        getBasePaddleWidth() - PADDLE_EXPAND_AMOUNT,
+        PADDLE_MIN_WIDTH
+    );
+    setPaddleWidth(targetWidth);
 }
 
 function setBallSpeed(ball, targetSpeed) {
@@ -709,26 +879,98 @@ function setBallSpeed(ball, targetSpeed) {
     ball.velocityY *= scale;
 }
 
-function applySlowBallEffect() {
+function getBaseBallSpeed() {
+    const baseSpeed = Math.hypot(BALL_INITIAL_VELOCITY_X, BALL_INITIAL_VELOCITY_Y);
+    return baseSpeed * getLevelSpeedMultiplier();
+}
+
+function resetBallSpeed() {
+    const baseSpeed = getBaseBallSpeed();
     for (const ball of balls) {
-        const currentSpeed =
-            Math.hypot(
-                ball.velocityX,
-                ball.velocityY
-            );
+        setBallSpeed(ball, baseSpeed);
+    }
+    ballEffectTimer = 0;
+    ballEffectType = null;
+}
 
-        const slowedSpeed =
-            Math.max(
-                MIN_BALL_SPEED,
-                currentSpeed *
-                SLOW_BALL_MULTIPLIER
-            );
+function resetItemEffects() {
+    resetPaddleWidth();
+    resetBallSpeed();
+}
 
-        setBallSpeed(
-            ball,
-            slowedSpeed
+function updateItemTimers(deltaTime) {
+    if (paddleEffectTimer > 0) {
+        paddleEffectTimer -= deltaTime;
+        if (paddleEffectTimer <= 0) {
+            resetPaddleWidth();
+        }
+    }
+
+    if (ballEffectTimer > 0) {
+        ballEffectTimer -= deltaTime;
+        if (ballEffectTimer <= 0) {
+            resetBallSpeed();
+        }
+    }
+}
+
+function applySlowBallEffect() {
+    ballEffectTimer = ITEM_EFFECT_DURATION;
+    ballEffectType = ITEM_TYPES.SLOW_BALL;
+    const targetSpeed = Math.max(
+        MIN_BALL_SPEED,
+        getBaseBallSpeed() * SLOW_BALL_MULTIPLIER
+    );
+    for (const ball of balls) {
+        setBallSpeed(ball, targetSpeed);
+    }
+}
+
+function applyFastBallEffect() {
+    ballEffectTimer = ITEM_EFFECT_DURATION;
+    ballEffectType = ITEM_TYPES.FAST_BALL;
+    const targetSpeed = Math.min(
+        MAX_BALL_SPEED,
+        getBaseBallSpeed() * FAST_BALL_MULTIPLIER
+    );
+    for (const ball of balls) {
+        setBallSpeed(ball, targetSpeed);
+    }
+}
+
+
+function spawnExtraBalls(count) {
+    if (balls.length === 0 || balls.length >= MAX_ACTIVE_BALLS) {
+        return;
+    }
+
+    const availableSlots = MAX_ACTIVE_BALLS - balls.length;
+    const spawnCount = Math.min(count, availableSlots);
+    const sourceBall = balls[0];
+    const currentSpeed =
+        Math.hypot(sourceBall.velocityX, sourceBall.velocityY) ||
+        (BALL_INITIAL_VELOCITY_X * getLevelSpeedMultiplier());
+    const baseAngle = Math.atan2(sourceBall.velocityX, -sourceBall.velocityY);
+
+    for (let i = 0; i < spawnCount; i++) {
+        const sign = i % 2 === 0 ? 1 : -1;
+        const offset = ((Math.floor(i / 2) + 1) * Math.PI) / 7;
+        const angle = baseAngle + sign * offset;
+
+        const velocityX = currentSpeed * Math.sin(angle);
+        const velocityY = -currentSpeed * Math.cos(angle);
+
+        balls.push(
+            createBall(
+                sourceBall.x,
+                sourceBall.y,
+                velocityX,
+                velocityY
+            )
         );
     }
+
+    updateHud();
 }
 
 function applyItemEffect(type) {
@@ -737,12 +979,32 @@ function applyItemEffect(type) {
             applyExtraLifeEffect();
             break;
 
+        case ITEM_TYPES.LOSE_LIFE:
+            applyLoseLifeEffect();
+            break;
+
         case ITEM_TYPES.EXPAND_PADDLE:
             applyExpandPaddleEffect();
             break;
 
+        case ITEM_TYPES.SHRINK_PADDLE:
+            applyShrinkPaddleEffect();
+            break;
+
         case ITEM_TYPES.SLOW_BALL:
             applySlowBallEffect();
+            break;
+
+        case ITEM_TYPES.FAST_BALL:
+            applyFastBallEffect();
+            break;
+
+        case ITEM_TYPES.ADD_ONE_BALL:
+            spawnExtraBalls(1);
+            break;
+
+        case ITEM_TYPES.ADD_TWO_BALLS:
+            spawnExtraBalls(2);
             break;
 
         default:
@@ -767,18 +1029,35 @@ function getInitialBallCount() {
     return configuredCount;
 }
 
+function getLevelSpeedMultiplier() {
+    const currentLevel = getCurrentLevel();
+
+    if (
+        currentLevel &&
+        typeof currentLevel.speedMultiplier === "number" &&
+        currentLevel.speedMultiplier > 0
+    ) {
+        return currentLevel.speedMultiplier;
+    }
+
+    return 1.0;
+}
+
 function createSingleInitialBall() {
     const horizontalDirection =
         Math.random() < 0.5 ? -1 : 1;
+    const speedMultiplier = getLevelSpeedMultiplier();
 
     return createBall(
         paddle.x + paddle.width / 2,
         paddle.y - BALL_RADIUS - 2,
 
         BALL_INITIAL_VELOCITY_X *
-        horizontalDirection,
+        horizontalDirection *
+        speedMultiplier,
 
-        BALL_INITIAL_VELOCITY_Y
+        BALL_INITIAL_VELOCITY_Y *
+        speedMultiplier
     );
 }
 
@@ -791,11 +1070,12 @@ function createMultiballSet(ballCount) {
     const spawnY =
         paddle.y - BALL_RADIUS - 2;
 
+    const speedMultiplier = getLevelSpeedMultiplier();
     const initialSpeed =
         Math.hypot(
             BALL_INITIAL_VELOCITY_X,
             BALL_INITIAL_VELOCITY_Y
-        );
+        ) * speedMultiplier;
 
     for (
         let index = 0;
@@ -1007,6 +1287,7 @@ function createBrickLayout() {
                 x,
                 y,
                 baseX: x,
+                baseY: y,
 
                 width: BRICK_CONFIG.width,
                 height: BRICK_CONFIG.height,
@@ -1171,16 +1452,16 @@ function resetPaddleInput() {
 }
 
 function resetPaddle() {
-    paddle.width =
-        PADDLE_BASE_WIDTH;
-
-    paddle.x =
-        (canvas.width - paddle.width) / 2;
-
+    paddle.width = getBasePaddleWidth();
+    paddle.x = (canvas.width - paddle.width) / 2;
+    paddleEffectTimer = 0;
+    paddleEffectType = null;
     resetPaddleInput();
 }
 
 function resetBalls() {
+    ballEffectTimer = 0;
+    ballEffectType = null;
     const initialBallCount =
         getInitialBallCount();
 
@@ -1201,7 +1482,9 @@ function resetBalls() {
 function resetLevelState() {
     lives = INITIAL_LIVES;
     score = 0;
+    levelTime = 0;
 
+    resetItemEffects();
     resetPaddle();
     resetBalls();
     resetBricks();
@@ -1214,6 +1497,7 @@ function restartGame(){
 
 function handleAllBallsMissed() {
     lives--;
+    resetItemEffects();
 
     if (lives <= 0) {
         lives = 0;
@@ -1226,6 +1510,7 @@ function handleAllBallsMissed() {
     resetBalls();
     prepareBallLaunch();
 }
+
 
 function isBallCollidingWithBrick(
     ball,
@@ -1454,7 +1739,34 @@ function handleBrickDestroyed(brick) {
     }
 }
 
+function dropHarmfulItemFromExplosion(sourceBrick) {
+    const debuffTypes = [
+        ITEM_TYPES.LOSE_LIFE,
+        ITEM_TYPES.SHRINK_PADDLE,
+        ITEM_TYPES.FAST_BALL
+    ];
+
+    const type = debuffTypes[Math.floor(Math.random() * debuffTypes.length)];
+
+    items.push({
+        type,
+        x:
+            sourceBrick.x +
+            sourceBrick.width / 2 -
+            ITEM_CONFIG.width / 2,
+        y:
+            sourceBrick.y +
+            sourceBrick.height / 2 -
+            ITEM_CONFIG.height / 2,
+        width: ITEM_CONFIG.width,
+        height: ITEM_CONFIG.height,
+        fallSpeed: ITEM_CONFIG.fallSpeed * 1.2
+    });
+}
+
 function triggerBrickExplosion(sourceBrick) {
+    dropHarmfulItemFromExplosion(sourceBrick);
+
     const sourceCenterX =
         sourceBrick.x +
         sourceBrick.width / 2;
@@ -1522,9 +1834,25 @@ function getCurrentFormationMovement() {
     return currentLevel.formationMovement;
 }
 
+function getCurrentDescendingWall() {
+    const currentLevel = getCurrentLevel();
+
+    if (
+        !currentLevel.descendingWall ||
+        typeof currentLevel.descendingWall.stepInterval !== "number" ||
+        typeof currentLevel.descendingWall.stepDistance !== "number"
+    ) {
+        return null;
+    }
+
+    return currentLevel.descendingWall;
+}
+
 function resetBrickFormationMovement() {
     brickFormationOffsetX = 0;
     brickFormationDirection = 1;
+    brickFormationOffsetY = 0;
+    brickDescendTimer = 0;
 }
 
 function getCurrentLevel(){
@@ -1581,39 +1909,63 @@ function updateBrickFormation(deltaTime) {
     const movement =
         getCurrentFormationMovement();
 
-    if (!movement) {
+    const descending =
+        getCurrentDescendingWall();
+
+    if (!movement && !descending) {
         return;
     }
 
-    brickFormationOffsetX +=
-        movement.speed *
-        brickFormationDirection *
-        deltaTime;
+    if (movement) {
+        brickFormationOffsetX +=
+            movement.speed *
+            brickFormationDirection *
+            deltaTime;
 
-    if (
-        brickFormationOffsetX >=
-        movement.maxOffsetX
-    ) {
-        brickFormationOffsetX =
-            movement.maxOffsetX;
+        if (
+            brickFormationOffsetX >=
+            movement.maxOffsetX
+        ) {
+            brickFormationOffsetX =
+                movement.maxOffsetX;
 
-        brickFormationDirection = -1;
+            brickFormationDirection = -1;
+        }
+
+        if (
+            brickFormationOffsetX <=
+            -movement.maxOffsetX
+        ) {
+            brickFormationOffsetX =
+                -movement.maxOffsetX;
+
+            brickFormationDirection = 1;
+        }
     }
 
-    if (
-        brickFormationOffsetX <=
-        -movement.maxOffsetX
-    ) {
-        brickFormationOffsetX =
-            -movement.maxOffsetX;
+    if (descending) {
+        brickDescendTimer += deltaTime;
+        if (brickDescendTimer >= descending.stepInterval) {
+            brickDescendTimer = 0;
+            const maxOffsetY =
+                typeof descending.maxOffsetY === "number"
+                    ? descending.maxOffsetY
+                    : 160;
 
-        brickFormationDirection = 1;
+            if (brickFormationOffsetY < maxOffsetY) {
+                brickFormationOffsetY += descending.stepDistance;
+            }
+        }
     }
 
     for (const brick of bricks) {
         brick.x =
             brick.baseX +
             brickFormationOffsetX;
+
+        brick.y =
+            (brick.baseY !== undefined ? brick.baseY : brick.y) +
+            brickFormationOffsetY;
     }
 }
 
@@ -1730,6 +2082,9 @@ function updateGameStep(deltaTime) {
         return;
     }
 
+    levelTime += deltaTime;
+    updateItemTimers(deltaTime);
+
     updatePaddle(deltaTime);
     updateBrickFormation(deltaTime);
     updateBalls(deltaTime);
@@ -1742,6 +2097,7 @@ function updateGameStep(deltaTime) {
 
     checkLevelCompletion();
 }
+
 
 function drawPaddle() {
     ctx.fillStyle = GAME_COLORS.paddle;
@@ -1796,11 +2152,22 @@ function drawBalls() {
 }
 
 function setHudText(element, value) {
+    if (!element) {
+        return;
+    }
+
     const text = String(value);
 
     if (element.textContent !== text) {
         element.textContent = text;
     }
+}
+
+function formatTime(totalSeconds) {
+    const total = Math.max(0, Math.floor(totalSeconds));
+    const minutes = Math.floor(total / 60);
+    const seconds = total % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function updateHud() {
@@ -1827,7 +2194,31 @@ function updateHud() {
     setHudText(hud.levelName, currentLevel.name);
     setHudText(hud.bricks, getRemainingBreakableBrickCount());
     setHudText(hud.balls, balls.length);
+
+    if (hud.time) {
+        setHudText(hud.time, formatTime(levelTime));
+    }
+
+    if (hud.itemTimer && hud.itemTimerValue) {
+        const activeEffects = [];
+        if (paddleEffectTimer > 0 && paddleEffectType) {
+            const label = paddleEffectType === ITEM_TYPES.EXPAND_PADDLE ? "Dài (↔)" : "Ngắn (><)";
+            activeEffects.push(`${label} ${Math.ceil(paddleEffectTimer)}s`);
+        }
+        if (ballEffectTimer > 0 && ballEffectType) {
+            const label = ballEffectType === ITEM_TYPES.SLOW_BALL ? "Chậm (↓)" : "Nhanh (↑)";
+            activeEffects.push(`${label} ${Math.ceil(ballEffectTimer)}s`);
+        }
+
+        if (activeEffects.length > 0) {
+            hud.itemTimer.hidden = false;
+            setHudText(hud.itemTimerValue, activeEffects.join(" | "));
+        } else {
+            hud.itemTimer.hidden = true;
+        }
+    }
 }
+
 
 function resizeGameLayout() {
     const bodyStyle = getComputedStyle(document.body);
@@ -1918,9 +2309,8 @@ function drawBrickDetails(brick) {
 
 function drawItems() {
     ctx.save();
-    ctx.strokeStyle = GAME_COLORS.border;
     ctx.lineWidth = 1;
-    ctx.font = "bold 13px Arial";
+    ctx.font = "bold 12px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
@@ -1932,9 +2322,11 @@ function drawItems() {
             item.width,
             item.height
         );
+
+        ctx.strokeStyle = "rgba(15, 23, 42, 0.35)";
         ctx.strokeRect(item.x + 0.5, item.y + 0.5, item.width - 1, item.height - 1);
 
-        ctx.fillStyle = GAME_COLORS.detail;
+        ctx.fillStyle = "#ffffff";
 
         ctx.fillText(
             ITEM_LABELS[item.type] || "?",
@@ -1985,7 +2377,7 @@ function drawLevelComplete() {
 
     ctx.font = "18px Arial";
     ctx.fillText(
-        `Điểm: ${score}`,
+        `Điểm: ${score}  |  Thời gian: ${formatTime(levelTime)}`,
         centerX,
         centerY + 50
     );
@@ -2020,7 +2412,8 @@ function drawGameOver(){
 
     ctx.fillStyle = GAME_COLORS.text;
     ctx.font = "20px Arial";
-    ctx.fillText(`Điểm: ${score}`, centerX, centerY + 20);
+    ctx.fillText(`Điểm: ${score}  |  Thời gian: ${formatTime(levelTime)}`, centerX, centerY + 20);
+
 
     ctx.font = "18px Arial";
     ctx.fillText("Nhấn R để chơi lại", centerX, centerY + 60);
