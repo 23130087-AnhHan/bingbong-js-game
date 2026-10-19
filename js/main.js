@@ -261,10 +261,10 @@ const LEVELS = Object.freeze([
         speedMultiplier: 1.09,
 
         brickLayout: Object.freeze([
+            Object.freeze([2, 3, 3, 3, 3, 3, 2]),
+            Object.freeze([2, 2, 3, 3, 3, 2, 2]),
+            Object.freeze([2, 2, 2, 3, 2, 2, 2]),
             Object.freeze([1, 2, 2, 3, 2, 2, 1]),
-            Object.freeze([1, 2, 2, 2, 2, 2, 1]),
-            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
-            Object.freeze([1, 1, 1, 2, 1, 1, 1]),
             Object.freeze([1, 1, 1, 1, 1, 1, 1])
         ]),
 
@@ -297,12 +297,12 @@ const LEVELS = Object.freeze([
         speedMultiplier: 1.12,
 
         brickLayout: Object.freeze([
-            Object.freeze([2, 2, 3, 3, 3, 2, 2]),
-            Object.freeze([2, 1, 2, 2, 2, 1, 2]),
-            Object.freeze([1, 2, 2, 2, 2, 2, 1]),
-            Object.freeze([2, 1, 2, 2, 2, 1, 2]),
-            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
-            Object.freeze([0, 1, 1, 1, 1, 1, 0])
+            Object.freeze([3, 3, 3, 3, 3, 3, 3]),
+            Object.freeze([3, 1, 3, 3, 3, 1, 3]),
+            Object.freeze([2, 3, 3, 3, 3, 3, 2]),
+            Object.freeze([2, 1, 3, 3, 3, 1, 2]),
+            Object.freeze([1, 2, 2, 3, 2, 2, 1]),
+            Object.freeze([0, 1, 2, 2, 2, 1, 0])
         ]),
 
         formationMovement: Object.freeze({
@@ -342,12 +342,12 @@ const LEVELS = Object.freeze([
         paddleWidth: 110,
 
         brickLayout: Object.freeze([
+            Object.freeze([3, 3, 3, 3, 3, 3, 3]),
+            Object.freeze([3, 3, 3, 3, 3, 3, 3]),
             Object.freeze([2, 3, 3, 3, 3, 3, 2]),
-            Object.freeze([2, 2, 3, 2, 3, 2, 2]),
+            Object.freeze([2, 2, 3, 3, 3, 2, 2]),
             Object.freeze([1, 2, 2, 3, 2, 2, 1]),
-            Object.freeze([1, 2, 1, 2, 1, 2, 1]),
-            Object.freeze([1, 1, 2, 2, 2, 1, 1]),
-            Object.freeze([0, 1, 1, 1, 1, 1, 0])
+            Object.freeze([0, 2, 2, 2, 2, 2, 0])
         ]),
 
         formationMovement: Object.freeze({
@@ -390,12 +390,13 @@ const LEVELS = Object.freeze([
         paddleWidth: 100,
 
         brickLayout: Object.freeze([
-            Object.freeze([2, 3, 3, 3, 3, 3, 2]),
-            Object.freeze([2, 3, 3, 1, 3, 3, 2]),
-            Object.freeze([1, 2, 0, 3, 0, 2, 1]),
+            Object.freeze([3, 3, 3, 3, 3, 3, 3]),
+            Object.freeze([3, 3, 3, 1, 3, 3, 3]),
+            Object.freeze([3, 3, 0, 3, 0, 3, 3]),
             Object.freeze([1, 3, 3, 3, 3, 3, 1]),
-            Object.freeze([2, 2, 3, 1, 3, 2, 2]),
-            Object.freeze([0, 1, 1, 2, 1, 1, 0])
+            Object.freeze([3, 3, 3, 1, 3, 3, 3]),
+            Object.freeze([0, 2, 3, 3, 3, 2, 0]),
+            Object.freeze([0, 2, 2, 2, 2, 2, 0])
         ]),
 
         formationMovement: Object.freeze({

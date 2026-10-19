@@ -72,7 +72,7 @@ Ngoài các lần rơi thông thường, mỗi viên gạch nổ bị phá còn 
 | 4 | Cơn mưa vật phẩm | Gạch nhiều máu di chuyển, kết hợp vật phẩm có lợi và có hại | 1,09× |
 | 5 | Vụ nổ dây chuyền | Hai cụm bom nhỏ giúp dọn từng khu vực, đồng thời thả vật phẩm có hại; đội hình gạch di chuyển | 1,12× |
 | 6 | Bức tường hạ dần | Tường trượt ngang, hạ 18 px mỗi 12 giây đến tối đa 126 px; chỉ có hai viên gạch nổ, thanh đỡ rộng 110 px | 1,16× |
-| 7 | Pháo đài thép | Gạch thép di động có các lối mở; hai viên gạch nổ, thanh đỡ rộng 100 px và vật phẩm trừ mạng | 1,20× |
+| 7 | Pháo đài thép | Bảy hàng gạch với nhiều gạch 2–3 máu, gạch thép di động có các lối mở; hai viên gạch nổ, thanh đỡ rộng 100 px và vật phẩm trừ mạng | 1,20× |
 
 Mỗi màn có cùng mục tiêu: phá hết gạch có thể phá. Gạch thép chỉ là vật cản, không cần phá để thắng. Thanh đỡ cơ bản rộng 120 px ở màn 1–5. Tốc độ gạch di chuyển tăng từ 75 px/giây ở màn 3–4 lên 80, 85 và 90 px/giây ở màn 5, 6 và 7.
 
