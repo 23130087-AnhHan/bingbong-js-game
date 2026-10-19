@@ -23,6 +23,10 @@ const GAME_COLORS = Object.freeze({
     brickLabel: getThemeColor("--color-brick-label"),
     explosiveBrick: getThemeColor("--color-explosive"),
     steelBrick: getThemeColor("--color-steel"),
+    coreShield: getThemeColor("--color-core-shield"),
+    coreOpen: getThemeColor("--color-core-open"),
+    switchBrick: getThemeColor("--color-switch"),
+    switchActive: getThemeColor("--color-switch-active"),
     success: getThemeColor("--color-success"),
     danger: getThemeColor("--color-danger"),
     endOverlay: getThemeColor("--color-end-overlay")
@@ -31,6 +35,7 @@ const GAME_COLORS = Object.freeze({
 const gameView = {
     board: document.getElementById("gameBoard"),
     readyMessage: document.getElementById("readyMessage"),
+    readyHint: document.getElementById("readyHint"),
     pausedMessage: document.getElementById("pausedMessage")
 };
 
@@ -48,12 +53,14 @@ const hud = {
     levelNumber: document.getElementById("hudLevelNumber"),
     levelName: document.getElementById("hudLevelName"),
     bricks: document.getElementById("hudBricks"),
+    bricksLabel: document.getElementById("hudBricksLabel"),
     balls: document.getElementById("hudBalls"),
     controls: document.getElementById("gameControls"),
     time: document.getElementById("hudTime"),
     itemTimer: document.getElementById("hudItemTimer"),
     itemTimerValue: document.getElementById("hudItemTimerValue"),
-    wallTimer: document.getElementById("hudWallTimer")
+    wallTimer: document.getElementById("hudWallTimer"),
+    coreObjective: document.getElementById("hudCoreObjective")
 };
 
 
@@ -90,7 +97,9 @@ const BRICK_STYLES = Object.freeze({
 const BRICK_TYPES = Object.freeze({
     NORMAL: "normal",
     EXPLOSIVE: "explosive",
-    STEEL: "steel"
+    STEEL: "steel",
+    SWITCH: "switch",
+    CORE: "core"
 });
 
 const EXPLOSION_RADIUS = 95;
@@ -436,9 +445,31 @@ const LEVELS = Object.freeze([
 
     Object.freeze({
         id: 8,
-        name: "Trận chiến sức mạnh",
-        description: "Bản chơi thử: cơ chế sức mạnh đang phát triển. Màn này hiện sử dụng bố cục gạch cơ bản.",
-        inDevelopment: true
+        name: "Phá lõi năng lượng",
+        description: "Đánh hai công tắc tím A và B để mở lá chắn 10 giây, rồi đánh lõi xanh lá 7 máu. Phá lõi là thắng, không cần phá hết gạch. Mất bóng sẽ đóng lá chắn nhưng giữ máu lõi đã mất.",
+        speedMultiplier: 1.20,
+        paddleWidth: 100,
+
+        energyCore: Object.freeze({
+            shieldDuration: 10
+        }),
+
+        brickLayout: Object.freeze([
+            Object.freeze([0, 0, 0, 7, 0, 0, 0]),
+            Object.freeze([2, 3, 0, 0, 0, 3, 2]),
+            Object.freeze([2, 0, 2, 0, 2, 0, 2]),
+            Object.freeze([0, 1, 0, 0, 0, 1, 0]),
+            Object.freeze([0, 0, 0, 0, 0, 0, 0]),
+            Object.freeze([0, 2, 3, 0, 3, 2, 0])
+        ]),
+
+        coreCells: Object.freeze([
+            Object.freeze([0, 3])
+        ]),
+        switchCells: Object.freeze([
+            Object.freeze([3, 1]),
+            Object.freeze([3, 5])
+        ])
     }),
 
     Object.freeze({
@@ -470,6 +501,7 @@ let brickFormationOffsetX = 0;
 let brickFormationDirection = 1;
 let brickFormationOffsetY = 0;
 let brickDescendTimer = 0;
+let coreShieldTimer = 0;
 let items = [];
 let extraLifeDrops = 0;
 let levelTime = 0;
@@ -1283,13 +1315,23 @@ function createBrickLayout() {
                     column
                 );
 
+            let width = BRICK_CONFIG.width;
+            let height = BRICK_CONFIG.height;
+            if (type === BRICK_TYPES.CORE) {
+                width = 160;
+                height = 40;
+            } else if (type === BRICK_TYPES.SWITCH) {
+                width = 96;
+                height = 28;
+            }
+
             const x =
                 startX +
                 column *
                 (
                     BRICK_CONFIG.width +
                     BRICK_CONFIG.gapX
-                );
+                ) + (BRICK_CONFIG.width - width) / 2;
 
             const y =
                 BRICK_CONFIG.topOffset +
@@ -1305,8 +1347,8 @@ function createBrickLayout() {
                 baseX: x,
                 baseY: y,
 
-                width: BRICK_CONFIG.width,
-                height: BRICK_CONFIG.height,
+                width,
+                height,
 
                 type,
 
@@ -1363,6 +1405,14 @@ function getBrickTypeForCell(
 ) {
     const currentLevel =
         getCurrentLevel();
+
+    if (isConfiguredBrickCell(currentLevel.coreCells, row, column)) {
+        return BRICK_TYPES.CORE;
+    }
+
+    if (isConfiguredBrickCell(currentLevel.switchCells, row, column)) {
+        return BRICK_TYPES.SWITCH;
+    }
 
     if (
         isConfiguredBrickCell(
@@ -1489,6 +1539,30 @@ function tryDropItem(brick) {
 function resetBricks() {
     resetBrickFormationMovement();
     bricks = createBrickLayout();
+    resetCoreSwitches();
+}
+
+function resetCoreSwitches() {
+    coreShieldTimer = 0;
+
+    for (const brick of bricks) {
+        if (brick.type === BRICK_TYPES.SWITCH) {
+            brick.hp = brick.maxHp;
+            brick.destroyed = false;
+        }
+    }
+}
+
+function updateCoreShield(deltaTime) {
+    if (coreShieldTimer <= 0) {
+        return;
+    }
+
+    coreShieldTimer = Math.max(0, coreShieldTimer - deltaTime);
+    if (coreShieldTimer === 0) {
+        // Chỉ khôi phục công tắc; giữ nguyên sát thương đã gây lên lõi.
+        resetCoreSwitches();
+    }
 }
 
 function resetItems() {
@@ -1558,6 +1632,7 @@ function handleAllBallsMissed() {
         return;
     }
 
+    resetCoreSwitches();
     resetBalls();
     prepareBallLaunch();
 }
@@ -1691,10 +1766,17 @@ function damageBrick(brick) {
         return false;
     }
 
+    // Lõi vẫn làm bóng bật lại, nhưng chỉ mất máu khi lá chắn đang mở.
+    if (brick.type === BRICK_TYPES.CORE && coreShieldTimer <= 0) {
+        return false;
+    }
+
     brick.hp--;
 
-    score +=
-        POINTS_PER_BRICK_HIT;
+    // Công tắc có thể bật lại nhiều lần nên không dùng để tích điểm.
+    if (brick.type !== BRICK_TYPES.SWITCH) {
+        score += POINTS_PER_BRICK_HIT;
+    }
 
     if (brick.hp <= 0) {
         brick.hp = 0;
@@ -1707,6 +1789,10 @@ function damageBrick(brick) {
 }
 
 function getBrickColor(brick) {
+    if (brick.type === BRICK_TYPES.CORE) {
+        return coreShieldTimer > 0 ? GAME_COLORS.coreOpen : GAME_COLORS.coreShield;
+    }
+
     if (
         brick.type ===
         BRICK_TYPES.STEEL
@@ -1728,7 +1814,7 @@ function getBrickColor(brick) {
 }
 
 function getBrickDamageAlpha(brick) {
-    if (!isBreakableBrick(brick)) {
+    if (!isBreakableBrick(brick) || brick.type === BRICK_TYPES.CORE) {
         return 1;
     }
 
@@ -1780,6 +1866,14 @@ function handleBrickCollisions(ball) {
 }
 
 function handleBrickDestroyed(brick) {
+    if (brick.type === BRICK_TYPES.SWITCH) {
+        const switches = bricks.filter(target => target.type === BRICK_TYPES.SWITCH);
+        if (switches.every(target => target.destroyed)) {
+            coreShieldTimer = getCurrentLevel().energyCore.shieldDuration;
+        }
+        return;
+    }
+
     tryDropItem(brick);
 
     if (
@@ -2025,9 +2119,11 @@ function checkLevelCompletion() {
         return;
     }
 
-    if (
-        areAllBreakableBricksDestroyed()
-    ) {
+    const hasWon = getCurrentLevel().energyCore
+        ? bricks.some(brick => brick.type === BRICK_TYPES.CORE && brick.destroyed)
+        : areAllBreakableBricksDestroyed();
+
+    if (hasWon) {
         gameState =
             GAME_STATES.LEVEL_COMPLETE;
     }
@@ -2135,6 +2231,7 @@ function updateGameStep(deltaTime) {
 
     levelTime += deltaTime;
     updateItemTimers(deltaTime);
+    updateCoreShield(deltaTime);
 
     updatePaddle(deltaTime);
     updateBrickFormation(deltaTime);
@@ -2221,6 +2318,31 @@ function formatTime(totalSeconds) {
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function updateCoreObjective(core) {
+    hud.coreObjective.hidden = !core;
+    if (!core) {
+        return;
+    }
+
+    const isOpen = coreShieldTimer > 0;
+    hud.coreObjective.classList.toggle("is-open", isOpen);
+    hud.coreObjective.classList.toggle("is-warning", isOpen && coreShieldTimer <= 2);
+
+    if (core.destroyed) {
+        setHudText(hud.coreObjective, "Đã phá lõi năng lượng!");
+    } else if (isOpen) {
+        setHudText(hud.coreObjective, `Lá chắn mở: ${Math.ceil(coreShieldTimer)}s — Đánh lõi xanh lá!`);
+    } else {
+        const switchStates = bricks
+            .filter(brick => brick.type === BRICK_TYPES.SWITCH)
+            .map(brick => {
+                const name = brick.x < canvas.width / 2 ? "A" : "B";
+                return `${name}: ${brick.destroyed ? "đã bật" : "chưa bật"}`;
+            });
+        setHudText(hud.coreObjective, `${switchStates.join(" · ")} — Bật cả hai để mở lá chắn.`);
+    }
+}
+
 function updateHud() {
     const isLevelSelect =
         gameState === GAME_STATES.LEVEL_SELECT;
@@ -2243,8 +2365,14 @@ function updateHud() {
     setHudText(hud.score, score);
     setHudText(hud.levelNumber, `Màn ${currentLevel.id} / ${LEVELS.length}`);
     setHudText(hud.levelName, currentLevel.name);
-    setHudText(hud.bricks, getRemainingBreakableBrickCount());
+    const core = bricks.find(brick => brick.type === BRICK_TYPES.CORE);
+    setHudText(hud.bricksLabel, core ? "Máu lõi" : "Gạch còn lại");
+    setHudText(hud.bricks, core ? `${core.hp}/${core.maxHp}` : getRemainingBreakableBrickCount());
     setHudText(hud.balls, balls.length);
+    updateCoreObjective(core);
+    setHudText(gameView.readyHint, core
+        ? "Bật hai công tắc tím A và B, rồi đánh lõi xanh lá trong 10 giây."
+        : "Bạn có thể di chuyển thanh đỡ trước khi phát bóng.");
 
     const descendingWall = getCurrentDescendingWall();
     hud.wallTimer.hidden = !descendingWall;
@@ -2299,7 +2427,12 @@ function resizeGameLayout() {
     const borderHeight = canvas.offsetHeight - canvas.clientHeight;
     const canvasHeight = Math.max(0, availableHeight - interfaceHeight - borderHeight);
     const widthFromHeight = canvasHeight * (canvas.width / canvas.height) + borderWidth;
-    const gameWidth = Math.min(canvas.width, availableWidth, widthFromHeight);
+    // Khi màn hình thấp, cho phép cuộn thay vì thu sân nhỏ đến mức HUD bị tràn.
+    const minimumWidth = Math.min(320, availableWidth);
+    const gameWidth = Math.max(
+        minimumWidth,
+        Math.min(canvas.width, availableWidth, widthFromHeight)
+    );
 
     gameContainer.style.width = `${Math.floor(gameWidth)}px`;
 }
@@ -2310,6 +2443,11 @@ function drawBricks() {
     ctx.lineWidth = 1;
 
     for (const brick of bricks) {
+        if (brick.type === BRICK_TYPES.SWITCH) {
+            drawSwitchBrick(brick);
+            continue;
+        }
+
         if (brick.destroyed) {
             continue;
         }
@@ -2335,7 +2473,52 @@ function drawBricks() {
     ctx.restore();
 }
 
+function drawSwitchBrick(brick) {
+    const isActive = brick.destroyed;
+    const name = brick.x < canvas.width / 2 ? "A" : "B";
+    const color = isActive ? GAME_COLORS.switchActive : GAME_COLORS.switchBrick;
+
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = isActive ? 0.15 : 1;
+    ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = color;
+    ctx.strokeRect(brick.x + 0.5, brick.y + 0.5, brick.width - 1, brick.height - 1);
+    ctx.fillStyle = isActive ? color : GAME_COLORS.brickLabel;
+    ctx.font = "bold 12px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(isActive ? `${name}: ĐÃ BẬT` : `BẬT ${name}`, brick.x + brick.width / 2, brick.y + brick.height / 2);
+    ctx.restore();
+}
+
+function drawCoreDetails(brick) {
+    const isOpen = coreShieldTimer > 0;
+    const color = isOpen ? GAME_COLORS.coreOpen : GAME_COLORS.coreShield;
+
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(brick.x - 5, brick.y - 5, brick.width + 10, brick.height + 10);
+    ctx.font = "bold 11px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillStyle = color;
+    ctx.fillText(isOpen ? "LÁ CHẮN MỞ" : "LÁ CHẮN ĐÓNG", brick.x + brick.width / 2, brick.y - 10);
+    ctx.font = "bold 14px Arial";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = GAME_COLORS.brickLabel;
+    ctx.fillText(`LÕI ${brick.hp}/${brick.maxHp}`, brick.x + brick.width / 2, brick.y + brick.height / 2);
+    ctx.restore();
+}
+
 function drawBrickDetails(brick) {
+    if (brick.type === BRICK_TYPES.CORE) {
+        drawCoreDetails(brick);
+        return;
+    }
+
     ctx.fillStyle = GAME_COLORS.detail;
 
     if (brick.type === BRICK_TYPES.STEEL) {

@@ -55,11 +55,12 @@
 
         <div class="game-hud-secondary">
             <span>Thời gian: <strong id="hudTime">00:00</strong></span>
-            <span>Gạch còn lại: <strong id="hudBricks">35</strong></span>
+            <span><span id="hudBricksLabel">Gạch còn lại</span>: <strong id="hudBricks">35</strong></span>
             <span>Số bóng: <strong id="hudBalls">1</strong></span>
             <span id="hudWallTimer" hidden></span>
             <span id="hudItemTimer" hidden>Hiệu ứng: <strong id="hudItemTimerValue"></strong></span>
         </div>
+        <p id="hudCoreObjective" class="core-objective" role="status" hidden></p>
     </section>
 
     <div id="gameBoard" class="game-board" hidden>
@@ -74,7 +75,7 @@
         <div id="readyMessage" class="game-message" role="status" hidden>
             <h2>Sẵn sàng phát bóng?</h2>
             <p>Nhấp trong sân hoặc nhấn <kbd>Space</kbd> để phát bóng.</p>
-            <p class="game-message-hint">Bạn có thể di chuyển thanh đỡ trước khi phát bóng.</p>
+            <p id="readyHint" class="game-message-hint">Bạn có thể di chuyển thanh đỡ trước khi phát bóng.</p>
         </div>
 
         <div id="pausedMessage" class="game-message game-message-paused" role="status" hidden>
