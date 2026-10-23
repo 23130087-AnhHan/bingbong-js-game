@@ -2,7 +2,6 @@ const canvas = document.getElementById('gameCanvas');
 const ctx= canvas.getContext('2d');
 const gameContainer = document.querySelector(".game-container");
 
-// Read the shared CSS palette once when the game loads.
 const themeStyles = getComputedStyle(document.documentElement);
 
 function getThemeColor(property) {
