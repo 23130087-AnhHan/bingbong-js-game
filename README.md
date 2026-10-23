@@ -13,14 +13,13 @@ Di chuyển thanh đỡ để giữ bóng trong sân. Màn 1–7 yêu cầu phá
 | Thao tác | Điều khiển |
 | --- | --- |
 | Chọn màn | Nhấp chuột, hoặc dùng phím mũi tên rồi nhấn Enter |
-| Chọn nhanh màn 1–9 | Phím 1–9 |
-| Chọn nhanh màn 10 | Phím 0 |
+| Chọn nhanh màn 1–8 | Phím 1–8 |
 | Di chuyển thanh đỡ | Rê chuột trong sân, phím A/D hoặc ←/→ |
 | Phát bóng | Nhấp trong sân hoặc nhấn Space (phím cách) |
 | Tạm dừng | Phím P |
 | Tiếp tục | Phím C |
 | Về màn hình chọn màn | Phím M |
-| Sang màn tiếp theo sau khi thắng | Phím Enter |
+| Sang màn tiếp theo sau khi thắng màn 1–7 | Phím Enter |
 | Chơi lại sau khi thua | Phím R |
 
 Bóng chờ trên thanh đỡ khi bắt đầu màn hoặc sau khi toàn bộ bóng rơi khỏi sân. Bạn có thể di chuyển thanh đỡ trước khi phát bóng. Các màn hiện tại đều bắt đầu với một bóng.
@@ -49,7 +48,7 @@ Hiệu ứng dài/ngắn thanh đỡ thay thế nhau; hiệu ứng nhanh/chậm 
 
 Khi hết thời hạn, thanh đỡ hoặc tốc độ bóng trở về mức cơ bản của màn. Các hiệu ứng này cũng được xóa khi toàn bộ bóng rơi khỏi sân, bắt đầu màn mới hoặc chơi lại.
 
-Tối đa có 2 bóng trong sân. Vật phẩm thêm bóng không rơi khi đã đủ hai bóng; bóng mới tồn tại cho đến khi rơi khỏi sân hoặc màn chơi được đặt lại. Vật phẩm thêm hai bóng không được sử dụng trong các màn hiện tại.
+Tối đa có 2 bóng trong sân. Vật phẩm thêm bóng không rơi khi đã đủ hai bóng; bóng mới tồn tại cho đến khi rơi khỏi sân hoặc màn chơi được đặt lại.
 
 Vật phẩm rơi ngẫu nhiên khi phá gạch ở màn 4–7. Mạng và bóng bổ sung có trọng số thấp hơn các hiệu ứng tạm thời để hạn chế trợ giúp quá nhiều. Giới hạn rơi thêm mạng được tính cho cả lượt chơi màn, không đặt lại sau khi mất bóng; vật phẩm không nhặt được vẫn tính vào giới hạn này. Màn 6–7 không có vật phẩm thêm mạng.
 
@@ -77,7 +76,7 @@ Ngoài các lần rơi thông thường, mỗi viên gạch nổ bị phá còn 
 
 Màn 1–7 có cùng mục tiêu: phá hết gạch có thể phá. Gạch thép chỉ là vật cản, không cần phá để thắng. Thanh đỡ cơ bản rộng 120 px ở màn 1–5, 110 px ở màn 6 và 100 px ở màn 7–8. Tốc độ gạch di chuyển tăng từ 75 px/giây ở màn 3–4 lên 80, 85 và 90 px/giây ở màn 5, 6 và 7.
 
-Màn 9–10 đang phát triển, được đánh dấu trong menu và hiện có thể chơi thử với bố cục gạch cơ bản.
+Màn 8 là màn cuối. Phá lõi năng lượng sẽ hoàn thành trò chơi; nhấn M để về menu và chọn màn chơi lại.
 
 ## Màn 8 – Phá lõi năng lượng
 
