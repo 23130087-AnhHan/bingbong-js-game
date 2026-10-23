@@ -606,7 +606,6 @@ canvas.addEventListener("mousemove", (event) => {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / canvas.clientWidth;
 
-    // Convert the pointer position inside the border to game coordinates.
     paddle.mouseTargetX =
         (event.clientX - rect.left - canvas.clientLeft) * scaleX;
 });
@@ -712,7 +711,6 @@ function handleLevelSelectKey(event) {
         return;
     }
 
-    // Let focused buttons handle Enter and Space through their native click event.
     if (key === "Enter" && !levelMenu.grid.contains(document.activeElement)) {
         event.preventDefault();
         startLevel(selectedLevelIndex);
@@ -2414,13 +2412,11 @@ function resizeGameLayout() {
     const availableHeight = window.innerHeight -
         parseFloat(bodyStyle.paddingTop) - parseFloat(bodyStyle.paddingBottom);
 
-    // The HTML menu keeps readable text and can scroll on smaller screens.
     if (gameState === GAME_STATES.LEVEL_SELECT) {
         gameContainer.style.width = `${Math.min(canvas.width, availableWidth)}px`;
         return;
     }
 
-    // Reserve space for the title, HUD and controls before sizing the canvas.
     const interfaceHeight = gameContainer.offsetHeight - canvas.offsetHeight;
     const borderWidth = canvas.offsetWidth - canvas.clientWidth;
     const borderHeight = canvas.offsetHeight - canvas.clientHeight;
