@@ -1,5 +1,5 @@
-const canvas = document.getElementById('gameCanvas');
-const ctx= canvas.getContext('2d');
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 const gameContainer = document.querySelector(".game-container");
 
 const themeStyles = getComputedStyle(document.documentElement);
@@ -62,7 +62,6 @@ const hud = {
     coreObjective: document.getElementById("hudCoreObjective")
 };
 
-
 const INITIAL_LIVES = 3;
 const POINTS_PER_BRICK_HIT = 10;
 
@@ -74,7 +73,6 @@ const PADDLE_MAX_WIDTH = 200;
 const PADDLE_MIN_WIDTH = 70;
 const HELPFUL_EFFECT_DURATION = 10;
 const HARMFUL_EFFECT_DURATION = 6;
-
 
 const SLOW_BALL_MULTIPLIER = 0.85;
 const FAST_BALL_MULTIPLIER = 1.12;
@@ -106,22 +104,17 @@ const EXPLOSION_RADIUS = 95;
 const BRICK_CONFIG = Object.freeze({
     width: 72,
     height: 24,
-
     gapX: 14,
     gapY: 10,
-
     topOffset: 100
 });
 
 const paddle = {
     width: PADDLE_BASE_WIDTH,
     height: 18,
-
     x: 0,
     y: canvas.height - 40,
-
     speed: 480,
-
     moveLeft: false,
     moveRight: false,
     mouseTargetX: null
@@ -150,8 +143,6 @@ const ITEM_TYPES = Object.freeze({
     EXPAND_PADDLE: "expandPaddle",
     SLOW_BALL: "slowBall",
     ADD_ONE_BALL: "addOneBall",
-    ADD_TWO_BALLS: "addTwoBalls",
-
     // Có hại (Debuffs - Đỏ)
     LOSE_LIFE: "loseLife",
     SHRINK_PADDLE: "shrinkPaddle",
@@ -163,8 +154,6 @@ const ITEM_LABELS = Object.freeze({
     [ITEM_TYPES.EXPAND_PADDLE]: "\u2194",
     [ITEM_TYPES.SLOW_BALL]: "\u2193",
     [ITEM_TYPES.ADD_ONE_BALL]: "+1\u25cf",
-    [ITEM_TYPES.ADD_TWO_BALLS]: "+2\u25cf",
-
     [ITEM_TYPES.LOSE_LIFE]: "-1\u2665",
     [ITEM_TYPES.SHRINK_PADDLE]: "><",
     [ITEM_TYPES.FAST_BALL]: "\u2191"
@@ -176,8 +165,6 @@ const ITEM_COLORS = Object.freeze({
     [ITEM_TYPES.EXPAND_PADDLE]: "#16a34a",
     [ITEM_TYPES.SLOW_BALL]: "#16a34a",
     [ITEM_TYPES.ADD_ONE_BALL]: "#16a34a",
-    [ITEM_TYPES.ADD_TWO_BALLS]: "#16a34a",
-
     // Có hại: Đỏ
     [ITEM_TYPES.LOSE_LIFE]: "#dc2626",
     [ITEM_TYPES.SHRINK_PADDLE]: "#dc2626",
@@ -186,6 +173,18 @@ const ITEM_COLORS = Object.freeze({
 
 const HARMFUL_ITEM_TYPES = Object.freeze([
     ITEM_TYPES.LOSE_LIFE,
+    ITEM_TYPES.SHRINK_PADDLE,
+    ITEM_TYPES.FAST_BALL
+]);
+
+const HELPFUL_ITEM_TYPES = Object.freeze([
+    ITEM_TYPES.EXPAND_PADDLE,
+    ITEM_TYPES.SLOW_BALL,
+    ITEM_TYPES.ADD_ONE_BALL
+]);
+
+const STANDARD_ITEM_TYPES = Object.freeze([
+    ...HELPFUL_ITEM_TYPES,
     ITEM_TYPES.SHRINK_PADDLE,
     ITEM_TYPES.FAST_BALL
 ]);
@@ -207,10 +206,6 @@ const ITEM_CONFIG = Object.freeze({
     fallSpeed: 140
 });
 
-const MULTIBALL_SPREAD_ANGLE =
-    Math.PI / 4;
-
-
 const DEFAULT_BRICK_LAYOUT = Object.freeze([
     Object.freeze([1, 1, 1, 1, 1, 1, 1]),
     Object.freeze([1, 1, 1, 1, 1, 1, 1]),
@@ -231,7 +226,8 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 2,
         name: "Lớp giáp kiên cố",
-        description: "Tận dụng hai lối mở ở hàng dưới để đưa bóng vào nhóm gạch cứng bên trong. Tốc độ bóng: 1.03x.",
+        description:
+            "Tận dụng hai lối mở ở hàng dưới để đưa bóng vào nhóm gạch cứng bên trong. Tốc độ bóng: 1.03x.",
         speedMultiplier: 1.03,
         brickLayout: Object.freeze([
             Object.freeze([0, 1, 2, 3, 2, 1, 0]),
@@ -245,9 +241,9 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 3,
         name: "Đội hình di động",
-        description: "Đội hình gạch liên tục di chuyển qua lại. Căn thời điểm và điều chỉnh hướng bóng chính xác. Tốc độ bóng: 1.06x.",
+        description:
+            "Đội hình gạch liên tục di chuyển qua lại. Căn thời điểm và điều chỉnh hướng bóng chính xác. Tốc độ bóng: 1.06x.",
         speedMultiplier: 1.06,
-
         brickLayout: Object.freeze([
             Object.freeze([0, 2, 3, 3, 3, 2, 0]),
             Object.freeze([1, 2, 2, 2, 2, 2, 1]),
@@ -255,7 +251,6 @@ const LEVELS = Object.freeze([
             Object.freeze([0, 2, 2, 2, 2, 2, 0]),
             Object.freeze([0, 0, 1, 1, 1, 0, 0])
         ]),
-
         formationMovement: Object.freeze({
             speed: 75,
             maxOffsetX: 70
@@ -265,9 +260,9 @@ const LEVELS = Object.freeze([
     Object.freeze({
         id: 4,
         name: "Cơn mưa vật phẩm",
-        description: "Nhặt vật phẩm xanh và tránh vật phẩm đỏ khi gạch di chuyển. Tối đa hai bóng và một vật phẩm thêm mạng mỗi màn. Tốc độ bóng: 1.09x.",
+        description:
+            "Nhặt vật phẩm xanh và tránh vật phẩm đỏ khi gạch di chuyển. Tối đa hai bóng và một vật phẩm thêm mạng mỗi màn. Tốc độ bóng: 1.09x.",
         speedMultiplier: 1.09,
-
         brickLayout: Object.freeze([
             Object.freeze([2, 3, 3, 3, 3, 3, 2]),
             Object.freeze([2, 2, 3, 3, 3, 2, 2]),
@@ -275,35 +270,22 @@ const LEVELS = Object.freeze([
             Object.freeze([1, 2, 2, 3, 2, 2, 1]),
             Object.freeze([1, 1, 1, 1, 1, 1, 1])
         ]),
-
         formationMovement: Object.freeze({
             speed: 75,
             maxOffsetX: 60
         }),
-
         itemDropRate: 0.22,
         harmfulItemChance: 0.25,
         extraLifeDropLimit: 1,
-
-        itemTypes: Object.freeze([
-            // Có lợi (Xanh lá)
-            ITEM_TYPES.EXTRA_LIFE,
-            ITEM_TYPES.EXPAND_PADDLE,
-            ITEM_TYPES.SLOW_BALL,
-            ITEM_TYPES.ADD_ONE_BALL,
-
-            // Có hại (Đỏ)
-            ITEM_TYPES.SHRINK_PADDLE,
-            ITEM_TYPES.FAST_BALL
-        ])
+        itemTypes: Object.freeze([ITEM_TYPES.EXTRA_LIFE, ...STANDARD_ITEM_TYPES])
     }),
 
     Object.freeze({
         id: 5,
         name: "Vụ nổ dây chuyền",
-        description: "Nhắm vào từng cụm gạch nổ để dọn đường và tránh vật phẩm đỏ rơi từ vụ nổ. Tốc độ bóng: 1.12x.",
+        description:
+            "Nhắm vào từng cụm gạch nổ để dọn đường và tránh vật phẩm đỏ rơi từ vụ nổ. Tốc độ bóng: 1.12x.",
         speedMultiplier: 1.12,
-
         brickLayout: Object.freeze([
             Object.freeze([3, 3, 3, 3, 3, 3, 3]),
             Object.freeze([3, 1, 3, 3, 3, 1, 3]),
@@ -312,43 +294,29 @@ const LEVELS = Object.freeze([
             Object.freeze([1, 2, 2, 3, 2, 2, 1]),
             Object.freeze([0, 1, 2, 2, 2, 1, 0])
         ]),
-
         formationMovement: Object.freeze({
             speed: 80,
             maxOffsetX: 65
         }),
-
         explosiveCells: Object.freeze([
             Object.freeze([1, 1]),
             Object.freeze([1, 5]),
             Object.freeze([3, 1]),
             Object.freeze([3, 5])
         ]),
-
         itemDropRate: 0.23,
         harmfulItemChance: 0.35,
         extraLifeDropLimit: 1,
-
-        itemTypes: Object.freeze([
-            // Có lợi (Xanh lá)
-            ITEM_TYPES.EXTRA_LIFE,
-            ITEM_TYPES.EXPAND_PADDLE,
-            ITEM_TYPES.SLOW_BALL,
-            ITEM_TYPES.ADD_ONE_BALL,
-
-            // Có hại (Đỏ)
-            ITEM_TYPES.SHRINK_PADDLE,
-            ITEM_TYPES.FAST_BALL
-        ])
+        itemTypes: Object.freeze([ITEM_TYPES.EXTRA_LIFE, ...STANDARD_ITEM_TYPES])
     }),
 
     Object.freeze({
         id: 6,
         name: "Bức tường hạ dần",
-        description: "Tường gạch hạ 18 px mỗi 12 giây. Theo dõi đếm ngược và phá gạch trước khi khoảng phản ứng thu hẹp. Không có vật phẩm thêm mạng. Tốc độ bóng: 1.16x.",
+        description:
+            "Tường gạch hạ 18 px mỗi 12 giây. Theo dõi đếm ngược và phá gạch trước khi khoảng phản ứng thu hẹp. Không có vật phẩm thêm mạng. Tốc độ bóng: 1.16x.",
         speedMultiplier: 1.16,
         paddleWidth: 110,
-
         brickLayout: Object.freeze([
             Object.freeze([3, 3, 3, 3, 3, 3, 3]),
             Object.freeze([3, 3, 3, 3, 3, 3, 3]),
@@ -357,46 +325,29 @@ const LEVELS = Object.freeze([
             Object.freeze([1, 2, 2, 3, 2, 2, 1]),
             Object.freeze([0, 2, 2, 2, 2, 2, 0])
         ]),
-
         formationMovement: Object.freeze({
             speed: 85,
             maxOffsetX: 65
         }),
-
         descendingWall: Object.freeze({
             stepInterval: 12,
             stepDistance: 18,
             maxOffsetY: 126
         }),
-
-        explosiveCells: Object.freeze([
-            Object.freeze([1, 2]),
-            Object.freeze([4, 4])
-        ]),
-
+        explosiveCells: Object.freeze([Object.freeze([1, 2]), Object.freeze([4, 4])]),
         itemDropRate: 0.24,
-        harmfulItemChance: 0.40,
+        harmfulItemChance: 0.4,
         extraLifeDropLimit: 0,
-
-        itemTypes: Object.freeze([
-            // Có lợi (Xanh lá)
-            ITEM_TYPES.EXPAND_PADDLE,
-            ITEM_TYPES.SLOW_BALL,
-            ITEM_TYPES.ADD_ONE_BALL,
-
-            // Có hại (Đỏ)
-            ITEM_TYPES.SHRINK_PADDLE,
-            ITEM_TYPES.FAST_BALL
-        ])
+        itemTypes: STANDARD_ITEM_TYPES
     }),
 
     Object.freeze({
         id: 7,
         name: "Pháo đài thép",
-        description: "Đưa bóng qua các lối mở của pháo đài thép di động. Thanh đỡ hẹp hơn, ít bom và có vật phẩm trừ mạng. Tốc độ bóng: 1.20x.",
-        speedMultiplier: 1.20,
+        description:
+            "Đưa bóng qua các lối mở của pháo đài thép di động. Thanh đỡ hẹp hơn, ít bom và có vật phẩm trừ mạng. Tốc độ bóng: 1.20x.",
+        speedMultiplier: 1.2,
         paddleWidth: 100,
-
         brickLayout: Object.freeze([
             Object.freeze([3, 3, 3, 3, 3, 3, 3]),
             Object.freeze([3, 3, 3, 1, 3, 3, 3]),
@@ -406,12 +357,10 @@ const LEVELS = Object.freeze([
             Object.freeze([0, 2, 3, 3, 3, 2, 0]),
             Object.freeze([0, 2, 2, 2, 2, 2, 0])
         ]),
-
         formationMovement: Object.freeze({
             speed: 90,
             maxOffsetX: 60
         }),
-
         steelCells: Object.freeze([
             Object.freeze([0, 1]),
             Object.freeze([0, 5]),
@@ -419,40 +368,23 @@ const LEVELS = Object.freeze([
             Object.freeze([3, 0]),
             Object.freeze([3, 6])
         ]),
-
-        explosiveCells: Object.freeze([
-            Object.freeze([1, 3]),
-            Object.freeze([4, 3])
-        ]),
-
+        explosiveCells: Object.freeze([Object.freeze([1, 3]), Object.freeze([4, 3])]),
         itemDropRate: 0.25,
         harmfulItemChance: 0.45,
         extraLifeDropLimit: 0,
-
-        itemTypes: Object.freeze([
-            // Có lợi (Xanh lá)
-            ITEM_TYPES.EXPAND_PADDLE,
-            ITEM_TYPES.SLOW_BALL,
-            ITEM_TYPES.ADD_ONE_BALL,
-
-            // Có hại (Đỏ)
-            ITEM_TYPES.LOSE_LIFE,
-            ITEM_TYPES.SHRINK_PADDLE,
-            ITEM_TYPES.FAST_BALL
-        ])
+        itemTypes: Object.freeze([...HELPFUL_ITEM_TYPES, ...HARMFUL_ITEM_TYPES])
     }),
 
     Object.freeze({
         id: 8,
         name: "Phá lõi năng lượng",
-        description: "Đánh hai công tắc tím A và B để mở lá chắn 10 giây, rồi đánh lõi xanh lá 7 máu. Phá lõi là thắng, không cần phá hết gạch. Mất bóng sẽ đóng lá chắn nhưng giữ máu lõi đã mất.",
-        speedMultiplier: 1.20,
+        description:
+            "Đánh hai công tắc tím A và B để mở lá chắn 10 giây, rồi đánh lõi xanh lá 7 máu. Phá lõi là thắng, không cần phá hết gạch. Mất bóng sẽ đóng lá chắn nhưng giữ máu lõi đã mất.",
+        speedMultiplier: 1.2,
         paddleWidth: 100,
-
         energyCore: Object.freeze({
             shieldDuration: 10
         }),
-
         brickLayout: Object.freeze([
             Object.freeze([0, 0, 0, 7, 0, 0, 0]),
             Object.freeze([2, 3, 0, 0, 0, 3, 2]),
@@ -461,35 +393,14 @@ const LEVELS = Object.freeze([
             Object.freeze([0, 0, 0, 0, 0, 0, 0]),
             Object.freeze([0, 2, 3, 0, 3, 2, 0])
         ]),
-
-        coreCells: Object.freeze([
-            Object.freeze([0, 3])
-        ]),
-        switchCells: Object.freeze([
-            Object.freeze([3, 1]),
-            Object.freeze([3, 5])
-        ])
-    }),
-
-    Object.freeze({
-        id: 9,
-        name: "Vùng trọng lực",
-        description: "Bản chơi thử: cơ chế trọng lực đang phát triển. Màn này hiện sử dụng bố cục gạch cơ bản.",
-        inDevelopment: true
-    }),
-
-    Object.freeze({
-        id: 10,
-        name: "Trùm cuối",
-        description: "Bản chơi thử: trận đấu với trùm đang phát triển. Màn này hiện sử dụng bố cục gạch cơ bản.",
-        inDevelopment: true
+        coreCells: Object.freeze([Object.freeze([0, 3])]),
+        switchCells: Object.freeze([Object.freeze([3, 1]), Object.freeze([3, 5])])
     })
 ]);
 
-
-let lastTime=0;
-let lives=INITIAL_LIVES;
-let score=0;
+let lastTime = 0;
+let lives = INITIAL_LIVES;
+let score = 0;
 let gameState = GAME_STATES.LEVEL_SELECT;
 let stateBeforePause = GAME_STATES.PLAYING;
 let currentLevelIndex = 0;
@@ -509,12 +420,8 @@ let paddleEffectType = null;
 let ballEffectTimer = 0;
 let ballEffectType = null;
 
-
-window.addEventListener("keydown", (event) => {
-    if (
-        event.key.toLowerCase() === "m" &&
-        gameState !== GAME_STATES.LEVEL_SELECT
-    ) {
+window.addEventListener("keydown", event => {
+    if (event.key.toLowerCase() === "m" && gameState !== GAME_STATES.LEVEL_SELECT) {
         openLevelSelectMenu();
         return;
     }
@@ -523,17 +430,12 @@ window.addEventListener("keydown", (event) => {
         handleLevelSelectKey(event);
         return;
     }
-    if (
-        event.key === "Enter" &&
-        gameState === GAME_STATES.LEVEL_COMPLETE
-    ) {
+    if (event.key === "Enter" && gameState === GAME_STATES.LEVEL_COMPLETE) {
         advanceToNextLevel();
         return;
     }
 
-    if(event.key.toLowerCase() === "r" &&
-        gameState=== GAME_STATES.GAME_OVER
-    ) {
+    if (event.key.toLowerCase() === "r" && gameState === GAME_STATES.GAME_OVER) {
         restartGame();
         return;
     }
@@ -558,43 +460,36 @@ window.addEventListener("keydown", (event) => {
         return;
     }
 
-    if (
-        gameState !== GAME_STATES.PLAYING &&
-        gameState !== GAME_STATES.READY
-    ) {
+    if (gameState !== GAME_STATES.PLAYING && gameState !== GAME_STATES.READY) {
         return;
     }
 
-    if (
-         event.key === "ArrowLeft" ||
-         event.key === "ArrowRight"
-     ) {
-         event.preventDefault();
-     }
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+    }
 
-    if(event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
-        paddle.moveLeft= true;
+    if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
+        paddle.moveLeft = true;
         paddle.mouseTargetX = null;
     }
 
-    if(event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
-        paddle.moveRight= true;
+    if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
+        paddle.moveRight = true;
         paddle.mouseTargetX = null;
     }
-
 });
 
-window.addEventListener("keyup", (event) => {
-    if(event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
-        paddle.moveLeft= false;
+window.addEventListener("keyup", event => {
+    if (event.key === "ArrowLeft" || event.key.toLowerCase() === "a") {
+        paddle.moveLeft = false;
     }
 
-    if(event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
-        paddle.moveRight= false;
+    if (event.key === "ArrowRight" || event.key.toLowerCase() === "d") {
+        paddle.moveRight = false;
     }
 });
 
-canvas.addEventListener("mousemove", (event) => {
+canvas.addEventListener("mousemove", event => {
     if (
         (gameState !== GAME_STATES.PLAYING && gameState !== GAME_STATES.READY) ||
         paddle.moveLeft ||
@@ -606,8 +501,7 @@ canvas.addEventListener("mousemove", (event) => {
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / canvas.clientWidth;
 
-    paddle.mouseTargetX =
-        (event.clientX - rect.left - canvas.clientLeft) * scaleX;
+    paddle.mouseTargetX = (event.clientX - rect.left - canvas.clientLeft) * scaleX;
 });
 
 canvas.addEventListener("mouseleave", () => {
@@ -631,18 +525,11 @@ document.addEventListener("visibilitychange", () => {
     }
 });
 
-function createBall(
-    x,
-    y,
-    velocityX,
-    velocityY
-) {
+function createBall(x, y, velocityX, velocityY) {
     return {
         x,
         y,
-
         radius: BALL_RADIUS,
-
         velocityX,
         velocityY,
         brickContacts: new Set()
@@ -664,15 +551,6 @@ function createLevelMenu() {
         name.textContent = level.name;
 
         button.append(number, name);
-
-        if (level.inDevelopment) {
-            button.classList.add("level-card-in-development");
-
-            const status = document.createElement("span");
-            status.className = "level-card-status";
-            status.textContent = "Đang phát triển";
-            button.append(status);
-        }
 
         button.addEventListener("pointermove", () => button.focus({ preventScroll: true }));
         button.addEventListener("focus", () => selectMenuLevel(index));
@@ -699,15 +577,9 @@ function selectMenuLevel(levelIndex) {
 function handleLevelSelectKey(event) {
     const key = event.key;
 
-    if (key >= "1" && key <= "9") {
+    if (key >= "1" && key <= "8") {
         event.preventDefault();
         startLevel(Number(key) - 1);
-        return;
-    }
-
-    if (key === "0" && LEVELS.length >= 10) {
-        event.preventDefault();
-        startLevel(9);
         return;
     }
 
@@ -750,10 +622,7 @@ function handleLevelSelectKey(event) {
 }
 
 function startLevel(levelIndex) {
-    if (
-        levelIndex < 0 ||
-        levelIndex >= LEVELS.length
-    ) {
+    if (levelIndex < 0 || levelIndex >= LEVELS.length) {
         return;
     }
 
@@ -790,10 +659,7 @@ function launchBalls() {
 }
 
 function pauseGame() {
-    if (
-        gameState !== GAME_STATES.PLAYING &&
-        gameState !== GAME_STATES.READY
-    ) {
+    if (gameState !== GAME_STATES.PLAYING && gameState !== GAME_STATES.READY) {
         return;
     }
 
@@ -823,35 +689,16 @@ function openLevelSelectMenu() {
 }
 
 function isItemCollidingWithPaddle(item) {
-    const itemLeft = item.x;
-    const itemRight =
-        item.x + item.width;
-
-    const itemTop = item.y;
-    const itemBottom =
-        item.y + item.height;
-
-    const paddleLeft = paddle.x;
-    const paddleRight =
-        paddle.x + paddle.width;
-
-    const paddleTop = paddle.y;
-    const paddleBottom =
-        paddle.y + paddle.height;
-
     return (
-        itemRight >= paddleLeft &&
-        itemLeft <= paddleRight &&
-        itemBottom >= paddleTop &&
-        itemTop <= paddleBottom
+        item.x + item.width >= paddle.x &&
+        item.x <= paddle.x + paddle.width &&
+        item.y + item.height >= paddle.y &&
+        item.y <= paddle.y + paddle.height
     );
 }
 
 function applyExtraLifeEffect() {
-    lives = Math.min(
-        lives + 1,
-        MAX_LIVES
-    );
+    lives = Math.min(lives + 1, MAX_LIVES);
     updateHud();
 }
 
@@ -866,10 +713,8 @@ function applyLoseLifeEffect() {
 }
 
 function getBasePaddleWidth() {
-    const currentLevel = typeof getCurrentLevel === "function" ? getCurrentLevel() : null;
-    return (currentLevel && typeof currentLevel.paddleWidth === "number" && currentLevel.paddleWidth > 0)
-        ? currentLevel.paddleWidth
-        : PADDLE_BASE_WIDTH;
+    const width = getCurrentLevel().paddleWidth;
+    return typeof width === "number" && width > 0 ? width : PADDLE_BASE_WIDTH;
 }
 
 function setPaddleWidth(newWidth) {
@@ -885,39 +730,24 @@ function resetPaddleWidth() {
     paddleEffectType = null;
 }
 
-function applyExpandPaddleEffect() {
-    paddleEffectTimer = HELPFUL_EFFECT_DURATION;
-    paddleEffectType = ITEM_TYPES.EXPAND_PADDLE;
-    const targetWidth = Math.min(
-        getBasePaddleWidth() + PADDLE_EXPAND_AMOUNT,
-        PADDLE_MAX_WIDTH
-    );
-    setPaddleWidth(targetWidth);
-}
-
-function applyShrinkPaddleEffect() {
-    paddleEffectTimer = HARMFUL_EFFECT_DURATION;
-    paddleEffectType = ITEM_TYPES.SHRINK_PADDLE;
-    const targetWidth = Math.max(
-        getBasePaddleWidth() - PADDLE_EXPAND_AMOUNT,
-        PADDLE_MIN_WIDTH
-    );
+function applyPaddleEffect(type) {
+    const isExpand = type === ITEM_TYPES.EXPAND_PADDLE;
+    paddleEffectTimer = isExpand ? HELPFUL_EFFECT_DURATION : HARMFUL_EFFECT_DURATION;
+    paddleEffectType = type;
+    const targetWidth = isExpand
+        ? Math.min(getBasePaddleWidth() + PADDLE_EXPAND_AMOUNT, PADDLE_MAX_WIDTH)
+        : Math.max(getBasePaddleWidth() - PADDLE_EXPAND_AMOUNT, PADDLE_MIN_WIDTH);
     setPaddleWidth(targetWidth);
 }
 
 function setBallSpeed(ball, targetSpeed) {
-    const currentSpeed =
-        Math.hypot(
-            ball.velocityX,
-            ball.velocityY
-        );
+    const currentSpeed = Math.hypot(ball.velocityX, ball.velocityY);
 
     if (currentSpeed === 0) {
         return;
     }
 
-    const scale =
-        targetSpeed / currentSpeed;
+    const scale = targetSpeed / currentSpeed;
 
     ball.velocityX *= scale;
     ball.velocityY *= scale;
@@ -958,63 +788,32 @@ function updateItemTimers(deltaTime) {
     }
 }
 
-function applySlowBallEffect() {
-    ballEffectTimer = HELPFUL_EFFECT_DURATION;
-    ballEffectType = ITEM_TYPES.SLOW_BALL;
-    const targetSpeed = Math.max(
-        MIN_BALL_SPEED,
-        getBaseBallSpeed() * SLOW_BALL_MULTIPLIER
-    );
+function applyBallSpeedEffect(type) {
+    const isSlow = type === ITEM_TYPES.SLOW_BALL;
+    ballEffectTimer = isSlow ? HELPFUL_EFFECT_DURATION : HARMFUL_EFFECT_DURATION;
+    ballEffectType = type;
+    const targetSpeed = isSlow
+        ? Math.max(MIN_BALL_SPEED, getBaseBallSpeed() * SLOW_BALL_MULTIPLIER)
+        : Math.min(MAX_BALL_SPEED, getBaseBallSpeed() * FAST_BALL_MULTIPLIER);
     for (const ball of balls) {
         setBallSpeed(ball, targetSpeed);
     }
 }
 
-function applyFastBallEffect() {
-    ballEffectTimer = HARMFUL_EFFECT_DURATION;
-    ballEffectType = ITEM_TYPES.FAST_BALL;
-    const targetSpeed = Math.min(
-        MAX_BALL_SPEED,
-        getBaseBallSpeed() * FAST_BALL_MULTIPLIER
-    );
-    for (const ball of balls) {
-        setBallSpeed(ball, targetSpeed);
-    }
-}
-
-
-function spawnExtraBalls(count) {
+function spawnExtraBall() {
     if (balls.length === 0 || balls.length >= MAX_ACTIVE_BALLS) {
         return;
     }
 
-    const availableSlots = MAX_ACTIVE_BALLS - balls.length;
-    const spawnCount = Math.min(count, availableSlots);
     const sourceBall = balls[0];
-    const currentSpeed =
-        Math.hypot(sourceBall.velocityX, sourceBall.velocityY) ||
-        getBaseBallSpeed();
-    const baseAngle = Math.atan2(sourceBall.velocityX, -sourceBall.velocityY);
-
-    for (let i = 0; i < spawnCount; i++) {
-        const sign = i % 2 === 0 ? 1 : -1;
-        const offset = ((Math.floor(i / 2) + 1) * Math.PI) / 7;
-        const angle = baseAngle + sign * offset;
-
-        const velocityX = currentSpeed * Math.sin(angle);
-        const velocityY = -currentSpeed * Math.cos(angle);
-
-        const newBall = createBall(
-            sourceBall.x,
-            sourceBall.y,
-            velocityX,
-            velocityY
-        );
-        // Bóng mới cũng cần góc bay đủ dốc để không trôi ngang quá lâu.
-        limitBallAngle(newBall, 0, 0);
-        balls.push(newBall);
-    }
-
+    const currentSpeed = Math.hypot(sourceBall.velocityX, sourceBall.velocityY) || getBaseBallSpeed();
+    const angle = Math.atan2(sourceBall.velocityX, -sourceBall.velocityY) + Math.PI / 7;
+    const velocityX = currentSpeed * Math.sin(angle);
+    const velocityY = -currentSpeed * Math.cos(angle);
+    const newBall = createBall(sourceBall.x, sourceBall.y, velocityX, velocityY);
+    // Bóng mới cũng cần góc bay đủ dốc để không trôi ngang quá lâu.
+    limitBallAngle(newBall, 0, 0);
+    balls.push(newBall);
     updateHud();
 }
 
@@ -1029,27 +828,17 @@ function applyItemEffect(type) {
             break;
 
         case ITEM_TYPES.EXPAND_PADDLE:
-            applyExpandPaddleEffect();
-            break;
-
         case ITEM_TYPES.SHRINK_PADDLE:
-            applyShrinkPaddleEffect();
+            applyPaddleEffect(type);
             break;
 
         case ITEM_TYPES.SLOW_BALL:
-            applySlowBallEffect();
-            break;
-
         case ITEM_TYPES.FAST_BALL:
-            applyFastBallEffect();
+            applyBallSpeedEffect(type);
             break;
 
         case ITEM_TYPES.ADD_ONE_BALL:
-            spawnExtraBalls(1);
-            break;
-
-        case ITEM_TYPES.ADD_TWO_BALLS:
-            spawnExtraBalls(2);
+            spawnExtraBall();
             break;
 
         default:
@@ -1057,140 +846,42 @@ function applyItemEffect(type) {
     }
 }
 
-function getInitialBallCount() {
-    const currentLevel =
-        getCurrentLevel();
-
-    const configuredCount =
-        currentLevel.initialBallCount;
-
-    if (
-        !Number.isInteger(configuredCount) ||
-        configuredCount < 1
-    ) {
-        return 1;
-    }
-
-    return configuredCount;
-}
-
 function getLevelSpeedMultiplier() {
     const currentLevel = getCurrentLevel();
-
-    if (
-        currentLevel &&
-        typeof currentLevel.speedMultiplier === "number" &&
-        currentLevel.speedMultiplier > 0
-    ) {
-        return currentLevel.speedMultiplier;
-    }
-
-    return 1.0;
+    const multiplier = currentLevel && currentLevel.speedMultiplier;
+    return typeof multiplier === "number" && multiplier > 0 ? multiplier : 1;
 }
 
 function createSingleInitialBall() {
-    const horizontalDirection =
-        Math.random() < 0.5 ? -1 : 1;
+    const horizontalDirection = Math.random() < 0.5 ? -1 : 1;
     const speedMultiplier = getLevelSpeedMultiplier();
 
     return createBall(
         paddle.x + paddle.width / 2,
         paddle.y - BALL_RADIUS - 2,
 
-        BALL_INITIAL_VELOCITY_X *
-        horizontalDirection *
-        speedMultiplier,
+        BALL_INITIAL_VELOCITY_X * horizontalDirection * speedMultiplier,
 
-        BALL_INITIAL_VELOCITY_Y *
-        speedMultiplier
+        BALL_INITIAL_VELOCITY_Y * speedMultiplier
     );
 }
-
-function createMultiballSet(ballCount) {
-    const createdBalls = [];
-
-    const spawnX =
-        paddle.x + paddle.width / 2;
-
-    const spawnY =
-        paddle.y - BALL_RADIUS - 2;
-
-    const speedMultiplier = getLevelSpeedMultiplier();
-    const initialSpeed =
-        Math.hypot(
-            BALL_INITIAL_VELOCITY_X,
-            BALL_INITIAL_VELOCITY_Y
-        ) * speedMultiplier;
-
-    for (
-        let index = 0;
-        index < ballCount;
-        index++
-    ) {
-        const progress =
-            ballCount === 1
-                ? 0.5
-                : index / (ballCount - 1);
-
-        let angle =
-            -MULTIBALL_SPREAD_ANGLE +
-            progress *
-            (
-                MULTIBALL_SPREAD_ANGLE * 2
-            );
-
-        if (
-            Math.abs(angle) <
-            MIN_BOUNCE_ANGLE
-        ) {
-            angle = MIN_BOUNCE_ANGLE;
-        }
-
-        const velocityX =
-            initialSpeed *
-            Math.sin(angle);
-
-        const velocityY =
-            -initialSpeed *
-            Math.cos(angle);
-
-        createdBalls.push(
-            createBall(
-                spawnX,
-                spawnY,
-                velocityX,
-                velocityY
-            )
-        );
-    }
-
-    return createdBalls;
-}
-
 
 function handleWallCollision(ball) {
     if (ball.x - ball.radius <= 0) {
         ball.x = ball.radius;
-        ball.velocityX =
-            Math.abs(ball.velocityX);
+        ball.velocityX = Math.abs(ball.velocityX);
     }
 
-    if (
-        ball.x + ball.radius >=
-        canvas.width
-    ) {
-        ball.x =
-            canvas.width - ball.radius;
+    if (ball.x + ball.radius >= canvas.width) {
+        ball.x = canvas.width - ball.radius;
 
-        ball.velocityX =
-            -Math.abs(ball.velocityX);
+        ball.velocityX = -Math.abs(ball.velocityX);
     }
 
     if (ball.y - ball.radius <= 0) {
         ball.y = ball.radius;
 
-        ball.velocityY =
-            Math.abs(ball.velocityY);
+        ball.velocityY = Math.abs(ball.velocityY);
     }
 }
 
@@ -1201,10 +892,7 @@ function handlePaddleCollision(ball) {
     }
 
     // Tìm điểm gần tâm bóng nhất trên mép trên của thanh đỡ.
-    const closestX = Math.max(
-        paddle.x,
-        Math.min(ball.x, paddle.x + paddle.width)
-    );
+    const closestX = Math.max(paddle.x, Math.min(ball.x, paddle.x + paddle.width));
     const distanceX = ball.x - closestX;
     const distanceY = ball.y - paddle.y;
     const distanceSquared = distanceX * distanceX + distanceY * distanceY;
@@ -1219,7 +907,6 @@ function handlePaddleCollision(ball) {
     const paddleCenter = paddle.x + paddle.width / 2;
     const hitPosition = (ball.x - paddleCenter) / (paddle.width / 2);
     const clampedHitPosition = Math.max(-1, Math.min(1, hitPosition));
-
     let bounceAngle = clampedHitPosition * MAX_BOUNCE_ANGLE;
 
     if (Math.abs(bounceAngle) < MIN_BOUNCE_ANGLE) {
@@ -1242,76 +929,41 @@ function handlePaddleCollision(ball) {
     ball.velocityY = -speed * Math.cos(bounceAngle);
 }
 
-
 function hasBallMissed(ball) {
-    return (
-        ball.y - ball.radius >
-        canvas.height
-    );
+    return ball.y - ball.radius > canvas.height;
 }
 
-function isConfiguredBrickCell(
-    cells,
-    row,
-    column
-) {
+function isConfiguredBrickCell(cells, row, column) {
     if (!Array.isArray(cells)) {
         return false;
     }
 
     return cells.some(
-        ([configuredRow, configuredColumn]) =>
-            configuredRow === row &&
-            configuredColumn === column
+        ([configuredRow, configuredColumn]) => configuredRow === row && configuredColumn === column
     );
 }
 
 function isBreakableBrick(brick) {
-    return (
-        brick.type !==
-        BRICK_TYPES.STEEL
-    );
+    return brick.type !== BRICK_TYPES.STEEL;
 }
 
 function createBrickLayout() {
     const createdBricks = [];
-
     const layout = getCurrentBrickLayout();
-
     const rowCount = layout.length;
-
-    const columnCount = Math.max(
-        ...layout.map(row => row.length)
-    );
-
-    const totalWidth =
-        columnCount * BRICK_CONFIG.width +
-        (columnCount - 1) * BRICK_CONFIG.gapX;
-
-    const startX =
-        (canvas.width - totalWidth) / 2;
+    const columnCount = Math.max(...layout.map(row => row.length));
+    const totalWidth = columnCount * BRICK_CONFIG.width + (columnCount - 1) * BRICK_CONFIG.gapX;
+    const startX = (canvas.width - totalWidth) / 2;
 
     for (let row = 0; row < rowCount; row++) {
-        for (
-            let column = 0;
-            column < layout[row].length;
-            column++
-        ) {
+        for (let column = 0; column < layout[row].length; column++) {
             const hp = layout[row][column];
 
-            if (
-                typeof hp !== "number" ||
-                hp <= 0
-            ) {
+            if (typeof hp !== "number" || hp <= 0) {
                 continue;
             }
 
-            const type =
-                getBrickTypeForCell(
-                    row,
-                    column
-                );
-
+            const type = getBrickTypeForCell(row, column);
             let width = BRICK_CONFIG.width;
             let height = BRICK_CONFIG.height;
             if (type === BRICK_TYPES.CORE) {
@@ -1323,35 +975,19 @@ function createBrickLayout() {
             }
 
             const x =
-                startX +
-                column *
-                (
-                    BRICK_CONFIG.width +
-                    BRICK_CONFIG.gapX
-                ) + (BRICK_CONFIG.width - width) / 2;
-
-            const y =
-                BRICK_CONFIG.topOffset +
-                row *
-                (
-                    BRICK_CONFIG.height +
-                    BRICK_CONFIG.gapY
-                );
+                startX + column * (BRICK_CONFIG.width + BRICK_CONFIG.gapX) + (BRICK_CONFIG.width - width) / 2;
+            const y = BRICK_CONFIG.topOffset + row * (BRICK_CONFIG.height + BRICK_CONFIG.gapY);
 
             createdBricks.push({
                 x,
                 y,
                 baseX: x,
                 baseY: y,
-
                 width,
                 height,
-
                 type,
-
                 hp,
                 maxHp: hp,
-
                 destroyed: false
             });
         }
@@ -1360,48 +996,27 @@ function createBrickLayout() {
 }
 
 function getRemainingBreakableBrickCount() {
-    return bricks.filter(
-        brick =>
-            isBreakableBrick(brick) &&
-            !brick.destroyed
-    ).length;
+    return bricks.filter(brick => isBreakableBrick(brick) && !brick.destroyed).length;
 }
 
 function areAllBreakableBricksDestroyed() {
-    const breakableBricks =
-        bricks.filter(
-            isBreakableBrick
-        );
-
-    if (breakableBricks.length === 0) {
-        return false;
-    }
-
-    return breakableBricks.every(
-        brick => brick.destroyed
+    return (
+        bricks.some(isBreakableBrick) && !bricks.some(brick => isBreakableBrick(brick) && !brick.destroyed)
     );
 }
-
 
 function getCurrentBrickLayout() {
     const currentLevel = getCurrentLevel();
 
-    if (
-        !Array.isArray(currentLevel.brickLayout) ||
-        currentLevel.brickLayout.length === 0
-    ) {
+    if (!Array.isArray(currentLevel.brickLayout) || currentLevel.brickLayout.length === 0) {
         return DEFAULT_BRICK_LAYOUT;
     }
 
     return currentLevel.brickLayout;
 }
 
-function getBrickTypeForCell(
-    row,
-    column
-) {
-    const currentLevel =
-        getCurrentLevel();
+function getBrickTypeForCell(row, column) {
+    const currentLevel = getCurrentLevel();
 
     if (isConfiguredBrickCell(currentLevel.coreCells, row, column)) {
         return BRICK_TYPES.CORE;
@@ -1411,23 +1026,11 @@ function getBrickTypeForCell(
         return BRICK_TYPES.SWITCH;
     }
 
-    if (
-        isConfiguredBrickCell(
-            currentLevel.steelCells,
-            row,
-            column
-        )
-    ) {
+    if (isConfiguredBrickCell(currentLevel.steelCells, row, column)) {
         return BRICK_TYPES.STEEL;
     }
 
-    if (
-        isConfiguredBrickCell(
-            currentLevel.explosiveCells,
-            row,
-            column
-        )
-    ) {
+    if (isConfiguredBrickCell(currentLevel.explosiveCells, row, column)) {
         return BRICK_TYPES.EXPLOSIVE;
     }
 
@@ -1436,10 +1039,7 @@ function getBrickTypeForCell(
 
 function getRandomItemType(itemTypes) {
     // Trong cùng một nhóm, trọng số lớn hơn có cơ hội được chọn cao hơn.
-    const totalWeight = itemTypes.reduce(
-        (total, type) => total + ITEM_WEIGHTS[type],
-        0
-    );
+    const totalWeight = itemTypes.reduce((total, type) => total + ITEM_WEIGHTS[type], 0);
     let randomWeight = Math.random() * totalWeight;
 
     for (const type of itemTypes) {
@@ -1466,32 +1066,19 @@ function canDropItem(type) {
 
 function tryDropItem(brick) {
     const currentLevel = getCurrentLevel();
+    const dropRate = currentLevel.itemDropRate;
 
-    const dropRate =
-        currentLevel.itemDropRate;
-
-    if (
-        typeof dropRate !== "number" ||
-        dropRate <= 0
-    ) {
+    if (typeof dropRate !== "number" || dropRate <= 0) {
         return;
     }
 
-    const itemTypes =
-        currentLevel.itemTypes;
+    const itemTypes = currentLevel.itemTypes;
 
-    if (
-        !Array.isArray(itemTypes) ||
-        itemTypes.length === 0
-    ) {
+    if (!Array.isArray(itemTypes) || itemTypes.length === 0) {
         return;
     }
 
-    const clampedDropRate =
-        Math.max(
-            0,
-            Math.min(1, dropRate)
-        );
+    const clampedDropRate = Math.max(0, Math.min(1, dropRate));
 
     if (Math.random() >= clampedDropRate) {
         return;
@@ -1504,32 +1091,24 @@ function tryDropItem(brick) {
 
     // Chọn nhóm trước, rồi chọn vật phẩm để kiểm soát lượng trợ giúp mỗi màn.
     const dropHarmfulItem = Math.random() < currentLevel.harmfulItemChance;
-    const groupTypes = availableTypes.filter(
-        type => HARMFUL_ITEM_TYPES.includes(type) === dropHarmfulItem
-    );
+    const groupTypes = availableTypes.filter(type => HARMFUL_ITEM_TYPES.includes(type) === dropHarmfulItem);
     const type = getRandomItemType(groupTypes.length > 0 ? groupTypes : availableTypes);
 
     if (type === ITEM_TYPES.EXTRA_LIFE) {
         extraLifeDrops++;
     }
 
+    dropItem(brick, type);
+}
+
+function dropItem(brick, type, fallSpeed = ITEM_CONFIG.fallSpeed) {
     items.push({
         type,
-
-        x:
-            brick.x +
-            brick.width / 2 -
-            ITEM_CONFIG.width / 2,
-
-        y:
-            brick.y +
-            brick.height / 2 -
-            ITEM_CONFIG.height / 2,
-
+        x: brick.x + brick.width / 2 - ITEM_CONFIG.width / 2,
+        y: brick.y + brick.height / 2 - ITEM_CONFIG.height / 2,
         width: ITEM_CONFIG.width,
         height: ITEM_CONFIG.height,
-
-        fallSpeed: ITEM_CONFIG.fallSpeed
+        fallSpeed
     });
 }
 
@@ -1584,21 +1163,7 @@ function resetPaddle() {
 function resetBalls() {
     ballEffectTimer = 0;
     ballEffectType = null;
-    const initialBallCount =
-        getInitialBallCount();
-
-    if (initialBallCount === 1) {
-        balls = [
-            createSingleInitialBall()
-        ];
-
-        return;
-    }
-
-    balls =
-        createMultiballSet(
-            initialBallCount
-        );
+    balls = [createSingleInitialBall()];
 }
 
 function resetLevelState() {
@@ -1613,7 +1178,7 @@ function resetLevelState() {
     resetItems();
 }
 
-function restartGame(){
+function restartGame() {
     startLevel(currentLevelIndex);
 }
 
@@ -1623,8 +1188,7 @@ function handleAllBallsMissed() {
 
     if (lives <= 0) {
         lives = 0;
-        gameState =
-            GAME_STATES.GAME_OVER;
+        gameState = GAME_STATES.GAME_OVER;
 
         return;
     }
@@ -1634,43 +1198,14 @@ function handleAllBallsMissed() {
     prepareBallLaunch();
 }
 
+function isBallCollidingWithBrick(ball, brick) {
+    const closestX = Math.max(brick.x, Math.min(ball.x, brick.x + brick.width));
+    const closestY = Math.max(brick.y, Math.min(ball.y, brick.y + brick.height));
+    const distanceX = ball.x - closestX;
+    const distanceY = ball.y - closestY;
+    const distanceSquared = distanceX * distanceX + distanceY * distanceY;
 
-function isBallCollidingWithBrick(
-    ball,
-    brick
-) {
-    const closestX =
-        Math.max(
-            brick.x,
-            Math.min(
-                ball.x,
-                brick.x + brick.width
-            )
-        );
-
-    const closestY =
-        Math.max(
-            brick.y,
-            Math.min(
-                ball.y,
-                brick.y + brick.height
-            )
-        );
-
-    const distanceX =
-        ball.x - closestX;
-
-    const distanceY =
-        ball.y - closestY;
-
-    const distanceSquared =
-        distanceX * distanceX +
-        distanceY * distanceY;
-
-    return (
-        distanceSquared <=
-        ball.radius * ball.radius
-    );
+    return distanceSquared <= ball.radius * ball.radius;
 }
 
 function resolveBrickCollision(ball, brick) {
@@ -1679,7 +1214,6 @@ function resolveBrickCollision(ball, brick) {
     const distanceX = ball.x - closestX;
     const distanceY = ball.y - closestY;
     const distance = Math.hypot(distanceX, distanceY);
-
     let normalX = 0;
     let normalY = 0;
     let overlap = ball.radius - distance;
@@ -1756,10 +1290,7 @@ function limitBallAngle(ball, normalX, normalY) {
 }
 
 function damageBrick(brick) {
-    if (
-        brick.destroyed ||
-        !isBreakableBrick(brick)
-    ) {
+    if (brick.destroyed || !isBreakableBrick(brick)) {
         return false;
     }
 
@@ -1790,24 +1321,15 @@ function getBrickColor(brick) {
         return coreShieldTimer > 0 ? GAME_COLORS.coreOpen : GAME_COLORS.coreShield;
     }
 
-    if (
-        brick.type ===
-        BRICK_TYPES.STEEL
-    ) {
+    if (brick.type === BRICK_TYPES.STEEL) {
         return GAME_COLORS.steelBrick;
     }
 
-    if (
-        brick.type ===
-        BRICK_TYPES.EXPLOSIVE
-    ) {
+    if (brick.type === BRICK_TYPES.EXPLOSIVE) {
         return GAME_COLORS.explosiveBrick;
     }
 
-    return (
-        BRICK_STYLES[brick.maxHp] ||
-        GAME_COLORS.brickOneHit
-    );
+    return BRICK_STYLES[brick.maxHp] || GAME_COLORS.brickOneHit;
 }
 
 function getBrickDamageAlpha(brick) {
@@ -1819,13 +1341,9 @@ function getBrickDamageAlpha(brick) {
         return 1;
     }
 
-    const healthRatio =
-        brick.hp / brick.maxHp;
+    const healthRatio = brick.hp / brick.maxHp;
 
-    return (
-        0.8 +
-        healthRatio * 0.2
-    );
+    return 0.8 + healthRatio * 0.2;
 }
 
 function handleBrickCollisions(ball) {
@@ -1873,86 +1391,41 @@ function handleBrickDestroyed(brick) {
 
     tryDropItem(brick);
 
-    if (
-        brick.type ===
-        BRICK_TYPES.EXPLOSIVE
-    ) {
+    if (brick.type === BRICK_TYPES.EXPLOSIVE) {
         triggerBrickExplosion(brick);
     }
 }
 
 function dropHarmfulItemFromExplosion(sourceBrick) {
-    const debuffTypes = getCurrentLevel().itemTypes.filter(
-        type => HARMFUL_ITEM_TYPES.includes(type)
-    );
-
+    const debuffTypes = getCurrentLevel().itemTypes.filter(type => HARMFUL_ITEM_TYPES.includes(type));
     const type = getRandomItemType(debuffTypes);
 
-    items.push({
-        type,
-        x:
-            sourceBrick.x +
-            sourceBrick.width / 2 -
-            ITEM_CONFIG.width / 2,
-        y:
-            sourceBrick.y +
-            sourceBrick.height / 2 -
-            ITEM_CONFIG.height / 2,
-        width: ITEM_CONFIG.width,
-        height: ITEM_CONFIG.height,
-        fallSpeed: ITEM_CONFIG.fallSpeed * 1.2
-    });
+    dropItem(sourceBrick, type, ITEM_CONFIG.fallSpeed * 1.2);
 }
 
 function triggerBrickExplosion(sourceBrick) {
     dropHarmfulItemFromExplosion(sourceBrick);
 
-    const sourceCenterX =
-        sourceBrick.x +
-        sourceBrick.width / 2;
-
-    const sourceCenterY =
-        sourceBrick.y +
-        sourceBrick.height / 2;
-
-    const explosionRadiusSquared =
-        EXPLOSION_RADIUS *
-        EXPLOSION_RADIUS;
+    const sourceCenterX = sourceBrick.x + sourceBrick.width / 2;
+    const sourceCenterY = sourceBrick.y + sourceBrick.height / 2;
+    const explosionRadiusSquared = EXPLOSION_RADIUS * EXPLOSION_RADIUS;
 
     for (const brick of bricks) {
         if (brick.destroyed) {
             continue;
         }
 
-        const brickCenterX =
-            brick.x +
-            brick.width / 2;
+        const brickCenterX = brick.x + brick.width / 2;
+        const brickCenterY = brick.y + brick.height / 2;
+        const distanceX = brickCenterX - sourceCenterX;
+        const distanceY = brickCenterY - sourceCenterY;
+        const distanceSquared = distanceX * distanceX + distanceY * distanceY;
 
-        const brickCenterY =
-            brick.y +
-            brick.height / 2;
-
-        const distanceX =
-            brickCenterX -
-            sourceCenterX;
-
-        const distanceY =
-            brickCenterY -
-            sourceCenterY;
-
-        const distanceSquared =
-            distanceX * distanceX +
-            distanceY * distanceY;
-
-        if (
-            distanceSquared >
-            explosionRadiusSquared
-        ) {
+        if (distanceSquared > explosionRadiusSquared) {
             continue;
         }
 
-        const wasDestroyed =
-            damageBrick(brick);
+        const wasDestroyed = damageBrick(brick);
 
         if (wasDestroyed) {
             handleBrickDestroyed(brick);
@@ -1961,31 +1434,25 @@ function triggerBrickExplosion(sourceBrick) {
 }
 
 function getCurrentFormationMovement() {
-    const currentLevel = getCurrentLevel();
-
-    if (
-        !currentLevel.formationMovement ||
-        typeof currentLevel.formationMovement.speed !== "number" ||
-        typeof currentLevel.formationMovement.maxOffsetX !== "number"
-    ) {
+    const movement = getCurrentLevel().formationMovement;
+    if (!movement || typeof movement.speed !== "number" || typeof movement.maxOffsetX !== "number") {
         return null;
     }
 
-    return currentLevel.formationMovement;
+    return movement;
 }
 
 function getCurrentDescendingWall() {
-    const currentLevel = getCurrentLevel();
-
+    const descending = getCurrentLevel().descendingWall;
     if (
-        !currentLevel.descendingWall ||
-        typeof currentLevel.descendingWall.stepInterval !== "number" ||
-        typeof currentLevel.descendingWall.stepDistance !== "number"
+        !descending ||
+        typeof descending.stepInterval !== "number" ||
+        typeof descending.stepDistance !== "number"
     ) {
         return null;
     }
 
-    return currentLevel.descendingWall;
+    return descending;
 }
 
 function resetBrickFormationMovement() {
@@ -1995,7 +1462,7 @@ function resetBrickFormationMovement() {
     brickDescendTimer = 0;
 }
 
-function getCurrentLevel(){
+function getCurrentLevel() {
     return LEVELS[currentLevelIndex];
 }
 
@@ -2003,11 +1470,7 @@ function updateBalls(deltaTime) {
     const activeBalls = [];
 
     for (const ball of balls) {
-        const missed =
-            updateBall(
-                ball,
-                deltaTime
-            );
+        const missed = updateBall(ball, deltaTime);
 
         if (!missed) {
             activeBalls.push(ball);
@@ -2025,12 +1488,9 @@ function updateItems(deltaTime) {
     const remainingItems = [];
 
     for (const item of items) {
-        item.y +=
-            item.fallSpeed * deltaTime;
+        item.y += item.fallSpeed * deltaTime;
 
-        if (
-            isItemCollidingWithPaddle(item)
-        ) {
+        if (isItemCollidingWithPaddle(item)) {
             applyItemEffect(item.type);
             // Dừng ngay nếu vật phẩm trừ mạng đã kết thúc ván chơi.
             if (gameState === GAME_STATES.GAME_OVER) {
@@ -2051,38 +1511,24 @@ function updateItems(deltaTime) {
 }
 
 function updateBrickFormation(deltaTime) {
-    const movement =
-        getCurrentFormationMovement();
-
-    const descending =
-        getCurrentDescendingWall();
+    const movement = getCurrentFormationMovement();
+    const descending = getCurrentDescendingWall();
 
     if (!movement && !descending) {
         return;
     }
 
     if (movement) {
-        brickFormationOffsetX +=
-            movement.speed *
-            brickFormationDirection *
-            deltaTime;
+        brickFormationOffsetX += movement.speed * brickFormationDirection * deltaTime;
 
-        if (
-            brickFormationOffsetX >=
-            movement.maxOffsetX
-        ) {
-            brickFormationOffsetX =
-                movement.maxOffsetX;
+        if (brickFormationOffsetX >= movement.maxOffsetX) {
+            brickFormationOffsetX = movement.maxOffsetX;
 
             brickFormationDirection = -1;
         }
 
-        if (
-            brickFormationOffsetX <=
-            -movement.maxOffsetX
-        ) {
-            brickFormationOffsetX =
-                -movement.maxOffsetX;
+        if (brickFormationOffsetX <= -movement.maxOffsetX) {
+            brickFormationOffsetX = -movement.maxOffsetX;
 
             brickFormationDirection = 1;
         }
@@ -2090,8 +1536,10 @@ function updateBrickFormation(deltaTime) {
 
     if (descending && brickFormationOffsetY < descending.maxOffsetY) {
         brickDescendTimer += deltaTime;
-        while (brickDescendTimer >= descending.stepInterval &&
-               brickFormationOffsetY < descending.maxOffsetY) {
+        while (
+            brickDescendTimer >= descending.stepInterval &&
+            brickFormationOffsetY < descending.maxOffsetY
+        ) {
             brickDescendTimer -= descending.stepInterval;
             brickFormationOffsetY = Math.min(
                 descending.maxOffsetY,
@@ -2101,13 +1549,9 @@ function updateBrickFormation(deltaTime) {
     }
 
     for (const brick of bricks) {
-        brick.x =
-            brick.baseX +
-            brickFormationOffsetX;
+        brick.x = brick.baseX + brickFormationOffsetX;
 
-        brick.y =
-            (brick.baseY !== undefined ? brick.baseY : brick.y) +
-            brickFormationOffsetY;
+        brick.y = (brick.baseY !== undefined ? brick.baseY : brick.y) + brickFormationOffsetY;
     }
 }
 
@@ -2121,20 +1565,16 @@ function checkLevelCompletion() {
         : areAllBreakableBricksDestroyed();
 
     if (hasWon) {
-        gameState =
-            GAME_STATES.LEVEL_COMPLETE;
+        gameState = GAME_STATES.LEVEL_COMPLETE;
     }
 }
 
 function advanceToNextLevel() {
-    if (
-        gameState !== GAME_STATES.LEVEL_COMPLETE
-    ) {
+    if (gameState !== GAME_STATES.LEVEL_COMPLETE) {
         return;
     }
 
-    const nextLevelIndex =
-        currentLevelIndex + 1;
+    const nextLevelIndex = currentLevelIndex + 1;
 
     if (nextLevelIndex >= LEVELS.length) {
         return;
@@ -2148,12 +1588,8 @@ function clampPaddleToCanvas() {
         paddle.x = 0;
     }
 
-    if (
-        paddle.x + paddle.width >
-        canvas.width
-    ) {
-        paddle.x =
-            canvas.width - paddle.width;
+    if (paddle.x + paddle.width > canvas.width) {
+        paddle.x = canvas.width - paddle.width;
     }
 }
 
@@ -2178,11 +1614,9 @@ function updatePaddle(deltaTime) {
 }
 
 function updateBall(ball, deltaTime) {
-    ball.x +=
-        ball.velocityX * deltaTime;
+    ball.x += ball.velocityX * deltaTime;
 
-    ball.y +=
-        ball.velocityY * deltaTime;
+    ball.y += ball.velocityY * deltaTime;
 
     handleWallCollision(ball);
     handlePaddleCollision(ball);
@@ -2193,10 +1627,7 @@ function updateBall(ball, deltaTime) {
 }
 
 function update(deltaTime) {
-    if (
-        deltaTime <= 0 ||
-        (gameState !== GAME_STATES.PLAYING && gameState !== GAME_STATES.READY)
-    ) {
+    if (deltaTime <= 0 || (gameState !== GAME_STATES.PLAYING && gameState !== GAME_STATES.READY)) {
         return;
     }
 
@@ -2243,16 +1674,10 @@ function updateGameStep(deltaTime) {
     checkLevelCompletion();
 }
 
-
 function drawPaddle() {
     ctx.fillStyle = GAME_COLORS.paddle;
 
-    ctx.fillRect(
-        paddle.x,
-        paddle.y,
-        paddle.width,
-        paddle.height
-    );
+    ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
 }
 
 function drawBall(ball) {
@@ -2272,13 +1697,7 @@ function drawBall(ball) {
 
     ctx.beginPath();
 
-    ctx.arc(
-        ball.x,
-        ball.y,
-        ball.radius - 0.5,
-        0,
-        Math.PI * 2
-    );
+    ctx.arc(ball.x, ball.y, ball.radius - 0.5, 0, Math.PI * 2);
 
     ctx.fillStyle = gradient;
     ctx.fill();
@@ -2341,8 +1760,7 @@ function updateCoreObjective(core) {
 }
 
 function updateHud() {
-    const isLevelSelect =
-        gameState === GAME_STATES.LEVEL_SELECT;
+    const isLevelSelect = gameState === GAME_STATES.LEVEL_SELECT;
 
     hud.container.hidden = isLevelSelect;
     hud.controls.hidden = isLevelSelect;
@@ -2367,9 +1785,12 @@ function updateHud() {
     setHudText(hud.bricks, core ? `${core.hp}/${core.maxHp}` : getRemainingBreakableBrickCount());
     setHudText(hud.balls, balls.length);
     updateCoreObjective(core);
-    setHudText(gameView.readyHint, core
-        ? "Bật hai công tắc tím A và B, rồi đánh lõi xanh lá trong 10 giây."
-        : "Bạn có thể di chuyển thanh đỡ trước khi phát bóng.");
+    setHudText(
+        gameView.readyHint,
+        core
+            ? "Bật hai công tắc tím A và B, rồi đánh lõi xanh lá trong 10 giây."
+            : "Bạn có thể di chuyển thanh đỡ trước khi phát bóng."
+    );
 
     const descendingWall = getCurrentDescendingWall();
     hud.wallTimer.hidden = !descendingWall;
@@ -2404,13 +1825,14 @@ function updateHud() {
     }
 }
 
-
 function resizeGameLayout() {
     const bodyStyle = getComputedStyle(document.body);
-    const availableWidth = document.documentElement.clientWidth -
-        parseFloat(bodyStyle.paddingLeft) - parseFloat(bodyStyle.paddingRight);
-    const availableHeight = window.innerHeight -
-        parseFloat(bodyStyle.paddingTop) - parseFloat(bodyStyle.paddingBottom);
+    const availableWidth =
+        document.documentElement.clientWidth -
+        parseFloat(bodyStyle.paddingLeft) -
+        parseFloat(bodyStyle.paddingRight);
+    const availableHeight =
+        window.innerHeight - parseFloat(bodyStyle.paddingTop) - parseFloat(bodyStyle.paddingBottom);
 
     if (gameState === GAME_STATES.LEVEL_SELECT) {
         gameContainer.style.width = `${Math.min(canvas.width, availableWidth)}px`;
@@ -2424,10 +1846,7 @@ function resizeGameLayout() {
     const widthFromHeight = canvasHeight * (canvas.width / canvas.height) + borderWidth;
     // Khi màn hình thấp, cho phép cuộn thay vì thu sân nhỏ đến mức HUD bị tràn.
     const minimumWidth = Math.min(320, availableWidth);
-    const gameWidth = Math.max(
-        minimumWidth,
-        Math.min(canvas.width, availableWidth, widthFromHeight)
-    );
+    const gameWidth = Math.max(minimumWidth, Math.min(canvas.width, availableWidth, widthFromHeight));
 
     gameContainer.style.width = `${Math.floor(gameWidth)}px`;
 }
@@ -2447,18 +1866,11 @@ function drawBricks() {
             continue;
         }
 
-        ctx.fillStyle =
-            getBrickColor(brick);
+        ctx.fillStyle = getBrickColor(brick);
 
-        ctx.globalAlpha =
-            getBrickDamageAlpha(brick);
+        ctx.globalAlpha = getBrickDamageAlpha(brick);
 
-        ctx.fillRect(
-            brick.x,
-            brick.y,
-            brick.width,
-            brick.height
-        );
+        ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
 
         ctx.globalAlpha = 1;
         ctx.strokeRect(brick.x + 0.5, brick.y + 0.5, brick.width - 1, brick.height - 1);
@@ -2484,7 +1896,11 @@ function drawSwitchBrick(brick) {
     ctx.font = "bold 12px Arial";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(isActive ? `${name}: ĐÃ BẬT` : `BẬT ${name}`, brick.x + brick.width / 2, brick.y + brick.height / 2);
+    ctx.fillText(
+        isActive ? `${name}: ĐÃ BẬT` : `BẬT ${name}`,
+        brick.x + brick.width / 2,
+        brick.y + brick.height / 2
+    );
     ctx.restore();
 }
 
@@ -2537,9 +1953,7 @@ function drawBrickDetails(brick) {
     }
 
     ctx.font = "bold 12px Arial";
-    ctx.fillStyle = brick.type === BRICK_TYPES.NORMAL
-        ? GAME_COLORS.brickLabel
-        : GAME_COLORS.detail;
+    ctx.fillStyle = brick.type === BRICK_TYPES.NORMAL ? GAME_COLORS.brickLabel : GAME_COLORS.detail;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(label, brick.x + brick.width / 2, brick.y + brick.height / 2);
@@ -2554,23 +1968,14 @@ function drawItems() {
 
     for (const item of items) {
         ctx.fillStyle = ITEM_COLORS[item.type] || GAME_COLORS.brickOneHit;
-        ctx.fillRect(
-            item.x,
-            item.y,
-            item.width,
-            item.height
-        );
+        ctx.fillRect(item.x, item.y, item.width, item.height);
 
         ctx.strokeStyle = "rgba(15, 23, 42, 0.35)";
         ctx.strokeRect(item.x + 0.5, item.y + 0.5, item.width - 1, item.height - 1);
 
         ctx.fillStyle = "#ffffff";
 
-        ctx.fillText(
-            ITEM_LABELS[item.type] || "?",
-            item.x + item.width / 2,
-            item.y + item.height / 2
-        );
+        ctx.fillText(ITEM_LABELS[item.type] || "?", item.x + item.width / 2, item.y + item.height / 2);
     }
 
     ctx.restore();
@@ -2582,43 +1987,25 @@ function drawLevelComplete() {
     }
 
     const currentLevel = getCurrentLevel();
-
     const hasNextLevel = currentLevelIndex < LEVELS.length - 1;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
     ctx.fillStyle = GAME_COLORS.endOverlay;
-    ctx.fillRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = GAME_COLORS.success;
     ctx.textAlign = "center";
 
     ctx.font = "42px Arial";
-    ctx.fillText(
-        hasNextLevel ? "HOÀN THÀNH MÀN!" : "HOÀN THÀNH TRÒ CHƠI!",
-        centerX,
-        centerY - 35
-    );
+    ctx.fillText(hasNextLevel ? "HOÀN THÀNH MÀN!" : "HOÀN THÀNH TRÒ CHƠI!", centerX, centerY - 35);
 
     ctx.fillStyle = GAME_COLORS.text;
     ctx.font = "24px Arial";
-    ctx.fillText(
-        currentLevel.name,
-        centerX,
-        centerY + 10
-    );
+    ctx.fillText(currentLevel.name, centerX, centerY + 10);
 
     ctx.font = "18px Arial";
-    ctx.fillText(
-        `Điểm: ${score}  |  Thời gian: ${formatTime(levelTime)}`,
-        centerX,
-        centerY + 50
-    );
+    ctx.fillText(`Điểm: ${score}  |  Thời gian: ${formatTime(levelTime)}`, centerX, centerY + 50);
 
     ctx.font = "18px Arial";
     ctx.fillText(
@@ -2630,17 +2017,15 @@ function drawLevelComplete() {
     ctx.textAlign = "left";
 }
 
-function drawGameOver(){
-    if(gameState !== GAME_STATES.GAME_OVER){
+function drawGameOver() {
+    if (gameState !== GAME_STATES.GAME_OVER) {
         return;
     }
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
 
     ctx.fillStyle = GAME_COLORS.endOverlay;
-    ctx.fillRect(
-        0, 0, canvas.width, canvas.height
-    );
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = GAME_COLORS.danger;
     ctx.textAlign = "center";
@@ -2652,7 +2037,6 @@ function drawGameOver(){
     ctx.font = "20px Arial";
     ctx.fillText(`Điểm: ${score}  |  Thời gian: ${formatTime(levelTime)}`, centerX, centerY + 20);
 
-
     ctx.font = "18px Arial";
     ctx.fillText("Nhấn R để chơi lại", centerX, centerY + 60);
 
@@ -2660,16 +2044,9 @@ function drawGameOver(){
 }
 
 function draw() {
-    ctx.clearRect(
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (
-        gameState === GAME_STATES.LEVEL_SELECT
-    ) {
+    if (gameState === GAME_STATES.LEVEL_SELECT) {
         return;
     }
 
@@ -2689,14 +2066,14 @@ function draw() {
     drawGameOver();
 }
 
-function gameLoop(timestamp){
-    if(lastTime === 0){
+function gameLoop(timestamp) {
+    if (lastTime === 0) {
         lastTime = timestamp;
     }
 
-    const deltaTime = (timestamp - lastTime)/1000;
+    const deltaTime = (timestamp - lastTime) / 1000;
 
-    lastTime=timestamp;
+    lastTime = timestamp;
     update(deltaTime);
     updateHud();
     draw();
