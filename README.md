@@ -6,6 +6,10 @@
 
 Mở `index.html` bằng trình duyệt hoặc chạy qua máy chủ web cục bộ của trình soạn thảo. Dự án không cần cài thư viện hay biên dịch.
 
+## Tài liệu hướng dẫn sử dụng
+
+Hướng dẫn đầy đủ từ màn 1 đến màn 8 có trong [bản Word](tai-lieu/Huong-dan-su-dung-BingBong.docx) và [bản PDF](tai-lieu/Huong-dan-su-dung-BingBong.pdf). Bản Word có mục lục tự động, số trang và ảnh minh họa. Xem [cách chỉnh sửa tài liệu](tai-lieu/README.md) nếu cần cập nhật nội dung hoặc hình ảnh.
+
 ## Cách chơi
 
 Di chuyển thanh đỡ để giữ bóng trong sân. Màn 1–7 yêu cầu phá hết các viên gạch có thể phá; gạch thép không tính vào điều kiện qua màn. Màn 8 yêu cầu kích hoạt công tắc để mở lá chắn và phá lõi năng lượng. Mỗi lần gây sát thương lên gạch thường, gạch nổ hoặc lõi được 10 điểm; bật công tắc không cộng điểm.
